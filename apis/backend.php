@@ -40331,8 +40331,8 @@ switch ($_POST["accion"]) {
 																	 INNER JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
 																	 LEFT JOIN tbconfig_coordinadorestransporte CT ON U.id_coordinadortransporte = CT.Id
 														 WHERE DL.is_complemento = 0
-															 AND DL.guias_fecha IS NOT NULL
-															 AND P.id_planta = " . $id_planta;
+															 AND DL.guias_fecha IS NOT NULL";
+															/*AND P.id_planta = " . $id_planta;*/
 
 		if (strlen($arr_lotes) > 0 || strlen($arr_codigosdespacho) > 0) {
 			if (strlen($arr_lotes) > 0) {
@@ -40389,7 +40389,7 @@ switch ($_POST["accion"]) {
 					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center; font-weight: bold;">';
 					$html .= '    ' . $row_datos["codigo_despacho"];
 
-					if ($row_datos["ID_MODALIDAD_ENVIO"] == 3 || $row_datos["ID_MODALIDAD_ENVIO"] == 4 || $row_datos["ID_MODALIDAD_ENVIO"] == 5) {
+					if ($row_datos["ID_MODALIDAD_ENVIO"] == 6 || $row_datos["ID_MODALIDAD_ENVIO"] == 3 || $row_datos["ID_MODALIDAD_ENVIO"] == 4 || $row_datos["ID_MODALIDAD_ENVIO"] == 5) {
 						$html .= ' / ' . $row_datos["codigo_despacho_comercializacion"];
 					}
 
@@ -40464,7 +40464,7 @@ switch ($_POST["accion"]) {
 					$html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
 					if ($is_cerrado == 0) {
-						if ($row_datos["ID_MODALIDAD_ENVIO"] == 3 || $row_datos["ID_MODALIDAD_ENVIO"] == 4 || $row_datos["ID_MODALIDAD_ENVIO"] == 5 || ($id_planta == 3 && ($row_datos["ID_MODALIDAD_ENVIO"] == 1 || $row_datos["ID_MODALIDAD_ENVIO"] == 2))) {
+						if ($row_datos["ID_MODALIDAD_ENVIO"] == 3 || $row_datos["ID_MODALIDAD_ENVIO"] == 6 || $row_datos["ID_MODALIDAD_ENVIO"] == 4 || $row_datos["ID_MODALIDAD_ENVIO"] == 5 || ($id_planta == 3 && ($row_datos["ID_MODALIDAD_ENVIO"] == 1 || $row_datos["ID_MODALIDAD_ENVIO"] == 2))) {
 							$html .= '		<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ', 0, 0, ' . $row_datos["id_coordinadortransporte"] . ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;">';
 							$html .= '			<b>Generar Liquidación</b>';
 							$html .= '		</button>';

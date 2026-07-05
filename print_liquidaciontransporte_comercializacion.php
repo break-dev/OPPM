@@ -1,80 +1,90 @@
 <?php
 
-	session_start();
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 
-	include('cnx/cnx.php');
-	include('global/variables.php');
+session_start();
 
-	require('libs/phpqrcode/qrlib.php');
-	require_once 'dompdf/autoload.inc.php';
+include('cnx/cnx.php');
+include('global/variables.php');
 
-	use Dompdf\Dompdf;
-	use Dompdf\Options;
+require('libs/phpqrcode/qrlib.php');
+require_once 'dompdf/autoload.inc.php';
 
-	$id_liquidacionmd5 = $_GET["x"];
-	$tiene_VR = $_GET["vr"];
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-	// Funciones
-		function formatearFecha($fecha) {
-	    // Separar fecha
-				$dia = str_pad(explode('-', $fecha)[2], 2, '0', STR_PAD_LEFT);
-				// $mes = nombre_meses(explode('-', $fecha)[1]);
-				$mes = str_pad(explode('-', $fecha)[1], 2, '0', STR_PAD_LEFT);
-				$anho = explode('-', $fecha)[0];
+$id_liquidacionmd5 = $_GET["x"];
+$tiene_VR = $_GET["vr"];
 
-	    return $dia.'/'.$mes.'/'.$anho;
-		}
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 
-		function nombre_meses($num_mes){
-			if ($num_mes == 1){
-				return "ENERO";
-			}
-			if ($num_mes == 2){
-				return "FEBRERO";
-			}
-			if ($num_mes == 3){
-				return "MARZO";
-			}
-			if ($num_mes == 4){
-				return "ABRIL";
-			}
-			if ($num_mes == 5){
-				return "MAYO";
-			}
-			if ($num_mes == 6){
-				return "JUNIO";
-			}
-			if ($num_mes == 7){
-				return "JULIO";
-			}
-			if ($num_mes == 8){
-				return "AGOSTO";
-			}
-			if ($num_mes == 9){
-				return "SEPTIEMBRE";
-			}
-			if ($num_mes == 10){
-				return "OCTUBRE";
-			}
-			if ($num_mes == 11){
-				return "NOVIEMBRE";
-			}
-			if ($num_mes == 12){
-				return "DICIEMBRE";
-			}
-		}
+// Funciones
+function formatearFecha($fecha)
+{
+	// Separar fecha
+	$dia = str_pad(explode('-', $fecha)[2], 2, '0', STR_PAD_LEFT);
+	// $mes = nombre_meses(explode('-', $fecha)[1]);
+	$mes = str_pad(explode('-', $fecha)[1], 2, '0', STR_PAD_LEFT);
+	$anho = explode('-', $fecha)[0];
 
-	// Ruta imágenes
-    $ruta_images_x = 'https://'.$_SERVER["HTTP_HOST"].$_SERVER["REQUEST_URI"];
-    $ruta_images = substr($ruta_images_x, 0, strpos($ruta_images_x, 'print_liquidaciontransporte_comercializacion.php')).'images/';
-    $ruta_images_qr = substr($ruta_images_x, 0, strpos($ruta_images_x, 'print_liquidaciontransporte_comercializacion.php')).'/';
+	return $dia . '/' . $mes . '/' . $anho;
+}
 
-	// 1. Obteniendo datos
-    $d = 1;
-    $arr_datos = array();
-		$nom_archivo = 'Liquidación de Flete - Comercialización';
+function nombre_meses($num_mes)
+{
+	if ($num_mes == 1) {
+		return "ENERO";
+	}
+	if ($num_mes == 2) {
+		return "FEBRERO";
+	}
+	if ($num_mes == 3) {
+		return "MARZO";
+	}
+	if ($num_mes == 4) {
+		return "ABRIL";
+	}
+	if ($num_mes == 5) {
+		return "MAYO";
+	}
+	if ($num_mes == 6) {
+		return "JUNIO";
+	}
+	if ($num_mes == 7) {
+		return "JULIO";
+	}
+	if ($num_mes == 8) {
+		return "AGOSTO";
+	}
+	if ($num_mes == 9) {
+		return "SEPTIEMBRE";
+	}
+	if ($num_mes == 10) {
+		return "OCTUBRE";
+	}
+	if ($num_mes == 11) {
+		return "NOVIEMBRE";
+	}
+	if ($num_mes == 12) {
+		return "DICIEMBRE";
+	}
+}
 
-		$q_datos = "SELECT DATOS.ID_UNIDAD,
+// Ruta imágenes
+$ruta_images_x = 'https://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+$ruta_images = substr($ruta_images_x, 0, strpos($ruta_images_x, 'print_liquidaciontransporte_comercializacion.php')) . 'images/';
+$ruta_images_qr = substr($ruta_images_x, 0, strpos($ruta_images_x, 'print_liquidaciontransporte_comercializacion.php')) . '/';
+
+// 1. Obteniendo datos
+$d = 1;
+$arr_datos = array();
+$nom_archivo = 'Liquidación de Flete - Comercialización';
+
+$q_datos = "SELECT DATOS.ID_UNIDAD,
 											 DATOS.codigo_despacho,
 											 DATOS.codigo_planta,
 											 DATOS.codigo_despacho_comercializacion,
@@ -190,60 +200,60 @@
 												         AND VR.estado = 'A'
 												       INNER JOIN catalogolotes L ON DL.cod_lote = L.ccod_Lote
 												       LEFT JOIN tbconfig_plantas PLD ON L.balanza_id_planta = PLD.Id
-												 WHERE MD5(LC.Id) = '".$id_liquidacionmd5."') AS DATOS
+												 WHERE MD5(LC.Id) = '" . $id_liquidacionmd5 . "') AS DATOS
 										 	 LEFT JOIN tbconfig_tarifatransporte TT ON TT.estado = 'A'
 										 	 	 AND DATOS.id_coordinadortransporte = TT.id_coordinadortransporte
 										     AND DATOS.id_planta = TT.id_planta
 											 LEFT JOIN tbconfig_monedas MO ON TT.id_moneda = MO.Id";
 
-		if ($res_datos = mysqli_query($enlace, $q_datos)){
-      if (mysqli_num_rows($res_datos) > 0) {
-        while($row_datos = mysqli_fetch_array($res_datos)){
-        	// Obteniendo datos
-        		if ($d == 1){
-        			$fecha_salida = formatearFecha(substr($row_datos["FECHAHORA_SALIDA"], 0, 10));
-	      			$codigo_despacho = $row_datos["codigo_despacho"];
-	      			$codigo_planta = $row_datos["codigo_planta"];
-							$codigo_despacho_comercializacion = $row_datos["codigo_despacho_comercializacion"];
-	      			$transportista_ruc = $row_datos["TRANSPORTISTA_RUC"];
-	      			$transportista_razonsocial = $row_datos["TRANSPORTISTA_RAZONSOCIAL"];
-							$placa1 = $row_datos["PLACA1"];
-							$placa2 = $row_datos["PLACA2"];
-							$punto_partida = $row_datos["guias_puntopartida"];
-							$punto_llegada = $row_datos["guias_puntodestino"];
-							$guias_glosa = $row_datos["guias_glosa"];
-							$subruta1 = $row_datos["subruta1"];
-							$subruta1_valorreferencial = $row_datos["subruta1_valorreferencial"];
-							$subruta2 = $row_datos["subruta2"];
-							$subruta2_valorreferencial = $row_datos["subruta2_valorreferencial"];
-							$id_planta = $row_datos["id_planta"];
-							$moneda = $row_datos["MONEDA"];
-							$id_modalidadenvio = $row_datos["ID_MODALIDAD_ENVIO"];
-							$planta_ingreso = $row_datos["PLANTA_INGRESO"];
+if ($res_datos = mysqli_query($enlace, $q_datos)) {
+	if (mysqli_num_rows($res_datos) > 0) {
+		while ($row_datos = mysqli_fetch_array($res_datos)) {
+			// Obteniendo datos
+			if ($d == 1) {
+				$fecha_salida = formatearFecha(substr($row_datos["FECHAHORA_SALIDA"], 0, 10));
+				$codigo_despacho = $row_datos["codigo_despacho"];
+				$codigo_planta = $row_datos["codigo_planta"];
+				$codigo_despacho_comercializacion = $row_datos["codigo_despacho_comercializacion"];
+				$transportista_ruc = $row_datos["TRANSPORTISTA_RUC"];
+				$transportista_razonsocial = $row_datos["TRANSPORTISTA_RAZONSOCIAL"];
+				$placa1 = $row_datos["PLACA1"];
+				$placa2 = $row_datos["PLACA2"];
+				$punto_partida = $row_datos["guias_puntopartida"];
+				$punto_llegada = $row_datos["guias_puntodestino"];
+				$guias_glosa = $row_datos["guias_glosa"];
+				$subruta1 = $row_datos["subruta1"];
+				$subruta1_valorreferencial = $row_datos["subruta1_valorreferencial"];
+				$subruta2 = $row_datos["subruta2"];
+				$subruta2_valorreferencial = $row_datos["subruta2_valorreferencial"];
+				$id_planta = $row_datos["id_planta"];
+				$moneda = $row_datos["MONEDA"];
+				$id_modalidadenvio = $row_datos["ID_MODALIDAD_ENVIO"];
+				$planta_ingreso = $row_datos["PLANTA_INGRESO"];
 
-							// Obteniendo el Logo del Informe según Modalidad de Envío
-								$informes_logo = '';
+				// Obteniendo el Logo del Informe según Modalidad de Envío
+				$informes_logo = '';
 
-								$q_datos_md = "SELECT informes_logo
+				$q_datos_md = "SELECT informes_logo
 																 FROM tbconfig_modalidadenvio
-																WHERE Id = ".$id_modalidadenvio;
+																WHERE Id = " . $id_modalidadenvio;
 
-								if ($res_datos_md = mysqli_query($enlace, $q_datos_md)){
-								  if (mysqli_num_rows($res_datos_md) > 0) {
-								    while($row_datos_md = mysqli_fetch_array($res_datos_md)){
-								    	$informes_logo = $url_images.$row_datos_md["informes_logo"];
-								    }
-								  }
-								}
-        		}
+				if ($res_datos_md = mysqli_query($enlace, $q_datos_md)) {
+					if (mysqli_num_rows($res_datos_md) > 0) {
+						while ($row_datos_md = mysqli_fetch_array($res_datos_md)) {
+							$informes_logo = $url_images . $row_datos_md["informes_logo"];
+						}
+					}
+				}
+			}
 
-        	array_push($arr_datos, $row_datos);
-        }
-      }
-    }
+			array_push($arr_datos, $row_datos);
+		}
+	}
+}
 
-	// 1. Arma la estructura de Cabeceera
-    $html = '	<!DOCTYPE html>
+// 1. Arma la estructura de Cabeceera
+$html = '	<!DOCTYPE html>
 						 	<html lang="es">
 								<head>
 									<title>Liquidación de Flete</title>
@@ -270,7 +280,7 @@
 										<table style="width: 100%; border-spacing: -1px;">
 											<tr style="font-size: 11px;">
 												<td rowspan="2" style="text-align: center; border: solid; border-width: 1px; border-color: #E6E9ED; width: 150px; height: 30px; vertical-align: middle;">
-													<img src="'.$ruta_images_qr.$informes_logo.'" style="width: 110px;"/>
+													<img src="' . $ruta_images_qr . $informes_logo . '" style="width: 110px;"/>
 												</td>
 
 												<td rowspan="2" style="text-align: center; border: solid; border-width: 1px; border-color: #E6E9ED; width: 300px; height: 30px; font-weight: bold; font-size: 16px; vertical-align: middle;">
@@ -282,7 +292,7 @@
 												</td>
 
 												<td style="text-align: center; border: solid; border-width: 1px; border-color: #E6E9ED; height: 30px; vertical-align: middle;">
-													'.$fecha_salida.'
+													' . $fecha_salida . '
 												</td>
 											</tr>
 
@@ -292,7 +302,7 @@
 												</td>
 
 												<td style="text-align: center; border: solid; border-width: 1px; border-color: #E6E9ED; height: 30px; vertical-align: middle; font-weight: bold;">
-													'.(($id_planta == 3) ? $codigo_despacho_comercializacion : $codigo_despacho).'
+													' . (($id_planta == 3) ? $codigo_despacho_comercializacion : $codigo_despacho) . '
 												</td>
 											</tr>
 										</table>
@@ -312,7 +322,7 @@
 												</td>
 
 												<td colspan="3" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle;">
-													'.$transportista_razonsocial.'
+													' . $transportista_razonsocial . '
 												</td>
 											</tr>
 
@@ -322,7 +332,7 @@
 												</td>
 
 												<td colspan="3" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle;">
-													'.$transportista_ruc.'
+													' . $transportista_ruc . '
 												</td>
 											</tr>
 
@@ -332,7 +342,7 @@
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; width: 250px;">
-													'.$placa1.'
+													' . $placa1 . '
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; width: 50px;">
@@ -340,7 +350,7 @@
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; width: 200px;">
-													'.((strlen($placa2) == 0) ? '' : $placa2).'
+													' . ((strlen($placa2) == 0) ? '' : $placa2) . '
 												</td>
 											</tr>
 										</table>
@@ -360,7 +370,7 @@
 												</td>
 
 												<td colspan="3" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle;">
-													'.$punto_partida.'
+													' . $punto_partida . '
 												</td>
 											</tr>
 
@@ -370,7 +380,7 @@
 												</td>
 
 												<td colspan="3" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle;">
-													'.$punto_llegada.'
+													' . $punto_llegada . '
 												</td>
 											</tr>
 										</table>
@@ -390,7 +400,7 @@
 												</td>
 
 												<td colspan="7" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle;">
-													'.$guias_glosa.'
+													' . $guias_glosa . '
 												</td>
 											</tr>
 
@@ -420,7 +430,7 @@
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center; width: 70px;">
-													Precio Unitario ('.$moneda.'xTNE)
+													Precio Unitario (' . $moneda . 'xTNE)
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center; font-weight: bold; width: 80px;">
@@ -428,142 +438,142 @@
 												</td>
 											</tr>';
 
-											// Agregando detalle
-												$d = 0;
-												$total_tmh = 0;
-												$total_monto = 0;
+// Agregando detalle
+$d = 0;
+$total_tmh = 0;
+$total_monto = 0;
 
-												while ($d < count($arr_datos)){
-													$html .= '	<tr style="font-size: 11px;">';
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-													$html .= '			'.$arr_datos[$d]["cod_lote"].((strlen($arr_datos[$d]["num_parte"]) == 0) ? '' : '<br>PARTE '.$arr_datos[$d]["num_parte"]);
-													$html .= '		</td>';
+while ($d < count($arr_datos)) {
+	$html .= '	<tr style="font-size: 11px;">';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+	$html .= '			' . $arr_datos[$d]["cod_lote"] . ((strlen($arr_datos[$d]["num_parte"]) == 0) ? '' : '<br>PARTE ' . $arr_datos[$d]["num_parte"]);
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-													$html .= '			'.(($id_planta == 3) ? $arr_datos[$d]["codigo_planta"] : $arr_datos[$d]["llegadaplanta_codigoplanta"]).((strlen($arr_datos[$d]["num_parte"]) == 0) ? '' : '<br>PARTE '.$arr_datos[$d]["num_parte"]);
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+	$html .= '			' . (($id_planta == 3) ? $arr_datos[$d]["codigo_planta"] : $arr_datos[$d]["llegadaplanta_codigoplanta"]) . ((strlen($arr_datos[$d]["num_parte"]) == 0) ? '' : '<br>PARTE ' . $arr_datos[$d]["num_parte"]);
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-													$html .= '			'.$planta_ingreso;
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+	$html .= '			' . $planta_ingreso;
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-													$html .= '			'.$arr_datos[$d]["DESTINO_PLANTA"];
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+	$html .= '			' . $arr_datos[$d]["DESTINO_PLANTA"];
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-													$html .= '			'.(($arr_datos[$d]["ID_TIPOCARGA"] == 5) ? $arr_datos[$d]["num_bigbag"] : '').' '.$arr_datos[$d]["TIPO_CARGA"];
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+	$html .= '			' . (($arr_datos[$d]["ID_TIPOCARGA"] == 5) ? $arr_datos[$d]["num_bigbag"] : '') . ' ' . $arr_datos[$d]["TIPO_CARGA"];
+	$html .= '		</td>';
 
-													// Obteniendo montos
-														$tmh = $arr_datos[$d]["TMH_TOTAL"];
-														$tarifa = ((strlen($arr_datos[$d]["TARIFA_CIERRE"]) == 0) ? $arr_datos[$d]["tarifa_sin_igv"] : $arr_datos[$d]["TARIFA_CIERRE"]);
-														$sub_total = $tmh * $tarifa;
+	// Obteniendo montos
+	$tmh = $arr_datos[$d]["TMH_TOTAL"];
+	$tarifa = ((strlen($arr_datos[$d]["TARIFA_CIERRE"]) == 0) ? $arr_datos[$d]["tarifa_sin_igv"] : $arr_datos[$d]["TARIFA_CIERRE"]);
+	$sub_total = $tmh * $tarifa;
 
-														$total_tmh += $tmh;
-														$total_monto += $sub_total;
+	$total_tmh += $tmh;
+	$total_monto += $sub_total;
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
-													$html .= '			'.number_format($tmh, 2, '.', ',');
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
+	$html .= '			' . number_format($tmh, 2, '.', ',');
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
-													$html .= '			'.number_format($tarifa, 2, '.', ',');
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
+	$html .= '			' . number_format($tarifa, 2, '.', ',');
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
-													$html .= '			<b>'.$moneda.' '.number_format($sub_total, 2, '.', ',').'</b>';
-													$html .= '		</td>';
-													$html .= '	</tr>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
+	$html .= '			<b>' . $moneda . ' ' . number_format($sub_total, 2, '.', ',') . '</b>';
+	$html .= '		</td>';
+	$html .= '	</tr>';
 
-													$d ++;
-												}
+	$d++;
+}
 
-											// Agregando resumen
-												$html .= '	<tr style="font-size: 11px;">';
-												$html .= '		<td colspan="4">';
-												$html .= '		</td>';
+// Agregando resumen
+$html .= '	<tr style="font-size: 11px;">';
+$html .= '		<td colspan="4">';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
-												$html .= '			Sub Total';
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
+$html .= '			Sub Total';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
-												$html .= '			'.number_format($total_tmh, 2, '.', ',');
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
+$html .= '			' . number_format($total_tmh, 2, '.', ',');
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
-												$html .= '			'.$moneda.' '.number_format($tarifa, 2, '.', ',');
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
+$html .= '			' . $moneda . ' ' . number_format($tarifa, 2, '.', ',');
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
-												$html .= '			'.$moneda.' '.number_format($total_monto, 2, '.', ',');
-												$html .= '		</td>';
-												$html .= '	</tr>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
+$html .= '			' . $moneda . ' ' . number_format($total_monto, 2, '.', ',');
+$html .= '		</td>';
+$html .= '	</tr>';
 
-												$html .= '	<tr style="font-size: 11px;">';
-												$html .= '		<td colspan="6">';
-												$html .= '		</td>';
+$html .= '	<tr style="font-size: 11px;">';
+$html .= '		<td colspan="6">';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; background-color: #F2F2F2; font-size: 10px;">';
-												$html .= '			Valor de Flete';
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; background-color: #F2F2F2; font-size: 10px;">';
+$html .= '			Valor de Flete';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
-												$html .= '			'.$moneda.' '.number_format($total_monto, 2, '.', ',');
-												$html .= '		</td>';
-												$html .= '	</tr>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
+$html .= '			' . $moneda . ' ' . number_format($total_monto, 2, '.', ',');
+$html .= '		</td>';
+$html .= '	</tr>';
 
-												$html .= '	<tr style="font-size: 11px;">';
-												$html .= '		<td colspan="6">';
-												$html .= '		</td>';
+$html .= '	<tr style="font-size: 11px;">';
+$html .= '		<td colspan="6">';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
-												$html .= '			IGV (18%)';
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
+$html .= '			IGV (18%)';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
-												$html .= '			'.$moneda.' '.number_format($total_monto * (18/100), 2, '.', ',');
-												$html .= '		</td>';
-												$html .= '	</tr>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold;">';
+$html .= '			' . $moneda . ' ' . number_format($total_monto * (18 / 100), 2, '.', ',');
+$html .= '		</td>';
+$html .= '	</tr>';
 
-												$html .= '	<tr style="font-size: 11px;">';
-												$html .= '		<td colspan="6">';
-												$html .= '		</td>';
+$html .= '	<tr style="font-size: 11px;">';
+$html .= '		<td colspan="6">';
+$html .= '		</td>';
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px; background-color: #F2F2F2;">';
-												$html .= '			Valor Total';
-												$html .= '		</td>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px; background-color: #F2F2F2;">';
+$html .= '			Valor Total';
+$html .= '		</td>';
 
-												// Obtiene el Valor Total
-													$valor_total = $total_monto + ($total_monto * (18/100));
+// Obtiene el Valor Total
+$valor_total = $total_monto + ($total_monto * (18 / 100));
 
-												$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
-												$html .= '			'.$moneda.' '.number_format($valor_total, 2, '.', ',');
-												$html .= '		</td>';
-												$html .= '	</tr>';
+$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
+$html .= '			' . $moneda . ' ' . number_format($valor_total, 2, '.', ',');
+$html .= '		</td>';
+$html .= '	</tr>';
 
-												if ($valor_total < 400){
-													$html .= '	<tr style="font-size: 11px;">';
-													$html .= '		<td colspan="6">';
-													$html .= '		</td>';
+if ($valor_total < 400) {
+	$html .= '	<tr style="font-size: 11px;">';
+	$html .= '		<td colspan="6">';
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px; background-color: #F2F2F2;">';
-													$html .= '			Monto a pagar';
-													$html .= '		</td>';
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px; background-color: #F2F2F2;">';
+	$html .= '			Monto a pagar';
+	$html .= '		</td>';
 
-													$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
-													$html .= '			'.$moneda.' '.number_format($valor_total, 2, '.', ',');
-													$html .= '		</td>';
-													$html .= '	</tr>';
-												}
+	$html .= '		<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right; font-weight: bold; background-color: #F2F2F2;">';
+	$html .= '			' . $moneda . ' ' . number_format($valor_total, 2, '.', ',');
+	$html .= '		</td>';
+	$html .= '	</tr>';
+}
 
-		$html .= '			</table>
+$html .= '			</table>
 									</div>';
 
-		// Valida si tiene Valor Referencial
-			if ($tiene_VR == 1 && $valor_total > 400){
-				$html .= '<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+// Valida si tiene Valor Referencial
+if ($tiene_VR == 1 && $valor_total > 400) {
+	$html .= '<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
 										<table style="width: 100%; border-spacing: -1px;">
 											<tr style="font-size: 11px;">
 												<td colspan="5" style="border: solid; border-width: 1px; border-color: #E6E9ED; font-size: 11px; font-weight: bold;">
@@ -577,11 +587,11 @@
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">
-													Valor referencial  ('.$moneda.'xTNE)
+													Valor referencial  (' . $moneda . 'xTNE)
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">
-													Valor referencial  ('.$moneda.'xTNE)
+													Valor referencial  (' . $moneda . 'xTNE)
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">
@@ -593,122 +603,121 @@
 												</td>
 											</tr>';
 
-											// Obtiene los datos del Valor Referencial configurado
-												if (strlen($subruta1) > 0){
-													$num_rows = 1;
+	// Obtiene los datos del Valor Referencial configurado
+	if (strlen($subruta1) > 0) {
+		$num_rows = 1;
 
-													// Determina el Número de rows
-														if (strlen($subruta2) > 0){
-															$num_rows = 2;
-														}
+		// Determina el Número de rows
+		if (strlen($subruta2) > 0) {
+			$num_rows = 2;
+		}
 
-													// Obtiene el Total del Valor Referencial
-														$total_VR = $subruta1_valorreferencial + $subruta2_valorreferencial;
+		// Obtiene el Total del Valor Referencial
+		$total_VR = $subruta1_valorreferencial + $subruta2_valorreferencial;
 
-													// Registra detalle
-														$v = 1;
+		// Registra detalle
+		$v = 1;
 
-														while ($v <= $num_rows){
-															$html .= '<tr style="font-size: 11px;">';
-															$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; width: 350px;">';
-															$html .= '		'.${'subruta'.$v};
-															$html .= '	</td>';
+		while ($v <= $num_rows) {
+			$html .= '<tr style="font-size: 11px;">';
+			$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; width: 350px;">';
+			$html .= '		' . ${'subruta' . $v};
+			$html .= '	</td>';
 
-															$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-															$html .= '		'.number_format(${'subruta'.$v.'_valorreferencial'}, 2, '.', ',');
-															$html .= '	</td>';
+			$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+			$html .= '		' . number_format(${'subruta' . $v . '_valorreferencial'}, 2, '.', ',');
+			$html .= '	</td>';
 
-															if ($v == 1){
-																$html .= '	<td rowspan="'.$num_rows.'" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-																$html .= '		'.$moneda.' '.$total_VR;
-																$html .= '	</td>';
+			if ($v == 1) {
+				$html .= '	<td rowspan="' . $num_rows . '" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+				$html .= '		' . $moneda . ' ' . $total_VR;
+				$html .= '	</td>';
 
-																$html .= '	<td rowspan="'.$num_rows.'" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
-																$html .= '		'.number_format($total_tmh, 2, '.', ',');
-																$html .= '	</td>';
+				$html .= '	<td rowspan="' . $num_rows . '" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center;">';
+				$html .= '		' . number_format($total_tmh, 2, '.', ',');
+				$html .= '	</td>';
 
-																// Obtiene el Total del Valor Referencial
-																	$total_VR_x = ($total_VR * $total_tmh);
+				// Obtiene el Total del Valor Referencial
+				$total_VR_x = ($total_VR * $total_tmh);
 
-																$html .= '	<td rowspan="'.$num_rows.'" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
-																$html .= '		'.$moneda.' '.number_format($total_VR_x, 2, '.', ',');
-																$html .= '	</td>';
-															}
-
-															$html .= '</tr>';
-
-															$v ++;
-														}
-												}
-
-											// Determina el Monto Mayor
-												$monto_mayor = 0;
-												$texto_resumen = '';
-
-												if ($valor_total > $total_VR_x){
-													$monto_mayor = $valor_total;
-													$texto_resumen = 'VALOR TOTAL FT';
-												}
-												else{
-													$monto_mayor = $total_VR_x;
-													$texto_resumen = 'VALOR REFERENCIAL';
-												}
-
-											// Setea el Final del Valor Referencial
-												$html .= '<tr style="font-size: 11px;">';
-												$html .= '	<td colspan="3">';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
-												$html .= '		Monto Mayor';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right;">';
-												$html .= '		'.$moneda.' '.number_format($monto_mayor, 2, '.', ',');
-												$html .= '	</td>';
-												$html .= '</tr>';
-
-												$html .= '<tr style="font-size: 11px;">';
-												$html .= '	<td colspan="3">';
-												$html .= '	</td>';
-
-												$html .= '	<td colspan="2" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: center; font-size: 10px; background-color: #F2F2F2;">';
-												$html .= '		'.$texto_resumen;
-												$html .= '	</td>';
-												$html .= '</tr>';
-
-												$html .= '<tr style="font-size: 11px;">';
-												$html .= '	<td colspan="3">';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-size: 10px;">';
-												$html .= '		Detracción (4%)';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right;">';
-												$html .= '		'.$moneda.' '.number_format($monto_mayor * (4/100), 0, '.', ',');
-												$html .= '	</td>';
-												$html .= '</tr>';
-
-												$html .= '<tr style="font-size: 11px;">';
-												$html .= '	<td colspan="3">';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-size: 10px; font-weight: bold; background-color: #F2F2F2;">';
-												$html .= '		Monto a pagar';
-												$html .= '	</td>';
-
-												$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right; background-color: #F2F2F2;">';
-												$html .= '		'.$moneda.' '.number_format($valor_total - round($monto_mayor * (4/100), 0), 2, '.', ',');
-												$html .= '	</td>';
-												$html .= '</tr>';
-
-				$html .= '	</table>
-									</div>';
+				$html .= '	<td rowspan="' . $num_rows . '" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: right;">';
+				$html .= '		' . $moneda . ' ' . number_format($total_VR_x, 2, '.', ',');
+				$html .= '	</td>';
 			}
 
-		// Setea firma de la Liquidación
-			$html .= '<div class="row" style="margin-top: 100px; margin-left: 50px; margin-right: 50px;">
+			$html .= '</tr>';
+
+			$v++;
+		}
+	}
+
+	// Determina el Monto Mayor
+	$monto_mayor = 0;
+	$texto_resumen = '';
+
+	if ($valor_total > $total_VR_x) {
+		$monto_mayor = $valor_total;
+		$texto_resumen = 'VALOR TOTAL FT';
+	} else {
+		$monto_mayor = $total_VR_x;
+		$texto_resumen = 'VALOR REFERENCIAL';
+	}
+
+	// Setea el Final del Valor Referencial
+	$html .= '<tr style="font-size: 11px;">';
+	$html .= '	<td colspan="3">';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; font-size: 10px;">';
+	$html .= '		Monto Mayor';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right;">';
+	$html .= '		' . $moneda . ' ' . number_format($monto_mayor, 2, '.', ',');
+	$html .= '	</td>';
+	$html .= '</tr>';
+
+	$html .= '<tr style="font-size: 11px;">';
+	$html .= '	<td colspan="3">';
+	$html .= '	</td>';
+
+	$html .= '	<td colspan="2" style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: center; font-size: 10px; background-color: #F2F2F2;">';
+	$html .= '		' . $texto_resumen;
+	$html .= '	</td>';
+	$html .= '</tr>';
+
+	$html .= '<tr style="font-size: 11px;">';
+	$html .= '	<td colspan="3">';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-size: 10px;">';
+	$html .= '		Detracción (4%)';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right;">';
+	$html .= '		' . $moneda . ' ' . number_format($monto_mayor * (4 / 100), 0, '.', ',');
+	$html .= '	</td>';
+	$html .= '</tr>';
+
+	$html .= '<tr style="font-size: 11px;">';
+	$html .= '	<td colspan="3">';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-size: 10px; font-weight: bold; background-color: #F2F2F2;">';
+	$html .= '		Monto a pagar';
+	$html .= '	</td>';
+
+	$html .= '	<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; font-weight: bold; text-align: right; background-color: #F2F2F2;">';
+	$html .= '		' . $moneda . ' ' . number_format($valor_total - round($monto_mayor * (4 / 100), 0), 2, '.', ',');
+	$html .= '	</td>';
+	$html .= '</tr>';
+
+	$html .= '	</table>
+									</div>';
+}
+
+// Setea firma de la Liquidación
+$html .= '<div class="row" style="margin-top: 100px; margin-left: 50px; margin-right: 50px;">
 									<table style="width: 100%; border-spacing: -1px;">
 										<tr style="font-size: 11px;">
 											<td style="width: 25%;">
@@ -716,7 +725,7 @@
 											</td>
 
 											<td style="width: 50%; border-top: solid; border-top-width: 2px; border-top-color: #E6E9ED; text-align: center;">
-												'.$transportista_razonsocial.'
+												' . $transportista_razonsocial . '
 											</td>
 
 											<td style="width: 25%;">
@@ -730,7 +739,7 @@
 											</td>
 
 											<td style="width: 40%; text-align: center;">
-												RUC: '.$transportista_ruc.'
+												RUC: ' . $transportista_ruc . '
 											</td>
 
 											<td style="width: 25%;">
@@ -739,21 +748,21 @@
 										</tr>
 									</table>
 								</div>';
- 
-	// Cierra html
-    $html .= '	</body>
+
+// Cierra html
+$html .= '	</body>
 							</html>';
 
-		$html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
+$html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
 // echo '$html: '.$html;
 // return;
-	$options = new Options();
-  $options->set('isRemoteEnabled', TRUE);
-  $document = new Dompdf($options);
+$options = new Options();
+$options->set('isRemoteEnabled', TRUE);
+$document = new Dompdf($options);
 
-	$document -> loadHtml($html, 'UTF-8');
-	$document -> setPaper('A4', 'portrait');
-	$document -> render();
-	$document -> stream('Modelo de Guía de '.$nom_archivo.' - '.$nom_archivo_guia, array('Attachment' => 0));
+$document->loadHtml($html, 'UTF-8');
+$document->setPaper('A4', 'portrait');
+$document->render();
+$document->stream('Modelo de Guía de ' . $nom_archivo . ' - ' . $nom_archivo_guia, array('Attachment' => 0));
 
 ?>
