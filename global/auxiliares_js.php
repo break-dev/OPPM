@@ -224,7 +224,7 @@
             else{
             	window.open('inicio.php', '_self');
 
-            	f_CheckModoAuditoria();
+            	// f_CheckModoAuditoria();
             }
           }
 
@@ -339,7 +339,7 @@
 
 	// f_CheckClientesCredito();
 	f_CheckVisitas();
-	f_CheckModoAuditoria();
+	// f_CheckModoAuditoria();
 </script>
 
 <script type="text/javascript">
