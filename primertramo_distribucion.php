@@ -645,7 +645,7 @@ if (!isset($_SESSION["Id"])) {
 											</div>
 										</div>
 
-										<div class="col-md-4 col-sm-4 col-xs-12">
+										<div class="col-md-4 col-sm-4 col-xs-12 " hidden>
 											<div class="d-flex justify-content-end">
 												<button id="btn_AddDistribucion" type="button" class="btn btn-primary" style="font-size: 14px; margin-top: -6px;" onclick="f_AddDistribucion();">+ Nueva Distribución</button>
 											</div>

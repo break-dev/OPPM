@@ -32759,239 +32759,221 @@ switch ($_POST["accion"]) {
 
 		break;
 
-	case 'cierre_PrimerTramo_ValidacionDistribucion':
-		$estado = 0;
+case 'cierre_PrimerTramo_ValidacionDistribucion':
+        $estado = 0;
 
-		// Recupera parámetros
-		$arr_lotes = $_POST["arr_lotes"];
-		$usuario_registro = $_SESSION["usu_usuario"];
+        // Recupera parámetros
+        $arr_lotes = $_POST["arr_lotes"];
+        $usuario_registro = $_SESSION["usu_usuario"];
 
-		// Grabando cierre
-		$q_update = "UPDATE despachos_primertramo_validaciondatos";
-		$q_update .= "  SET is_cerrado = 1, ";
-		$q_update .= "			cerrado_fechahoraregistro = '" . $g_fecha . "', ";
-		$q_update .= "			cerrado_usuarioregistro = '" . $usuario_registro . "'";
-		$q_update .= " WHERE lote_cod_lote IN (" . $arr_lotes . ")";
+        // Grabando cierre
+        $q_update = "UPDATE despachos_primertramo_validaciondatos";
+        $q_update .= "  SET is_cerrado = 1, ";
+        $q_update .= "      cerrado_fechahoraregistro = '" . $g_fecha . "', ";
+        $q_update .= "      cerrado_usuarioregistro = '" . $usuario_registro . "'";
+        $q_update .= " WHERE lote_cod_lote IN (" . $arr_lotes . ")";
 
-		if ($res_update = mysqli_query($enlace, $q_update)) {
-			$estado = 1;
+        if ($res_update = mysqli_query($enlace, $q_update)) {
+            $estado = 1;
 
-			// // Actualiza el Estado del Lote
-			// 	$q_update2 = "UPDATE despachos_primertramo_validaciondatos";
-			//   $q_update2 .= "  SET despacho_id_estadolote = 4";
-			//   $q_update2 .= " WHERE lote_cod_lote IN (".$arr_lotes.")";
-			//   $q_update2 .= "   AND despacho_id_estadolote NOT IN (5, 6)";
+            // Si tiene guía asignada debe actualizar los datos que depende de los 4 criterios
+            $q_datos = "SELECT Id,
+                               despacho_id_modalidadenvio,
+                               despacho_id_destinoplanta,
+                               lote_id_proveedorminero,
+                               balanza_placa
+                        FROM despachos_primertramo_validaciondatos
+                        WHERE lote_cod_lote IN (" . $arr_lotes . ")
+                          AND guiaremitente_serie IS NOT NULL";
 
-			//   if ($res_update2 = mysqli_query($enlace, $q_update2)) {
-			//   	$estado = 1;
-			//   }
+            if ($res_datos = mysqli_query($enlace, $q_datos)) {
+                if (mysqli_num_rows($res_datos) > 0) {
+                    while ($row_datos = mysqli_fetch_array($res_datos)) {
+                        $id_distribucion = $row_datos["Id"];
+                        $id_modalidadenvio = $row_datos["despacho_id_modalidadenvio"];
+                        $id_destino = $row_datos["despacho_id_destinoplanta"];
+                        $id_proveedorminero = $row_datos["lote_id_proveedorminero"];
+                        $placa = $row_datos["balanza_placa"];
 
-			// Si tiene guía asignada debe actualizar los datos que depende de los 4 criterios:
-			// Modadlidad | Destino | Proveedor | Placa
-			$q_datos = "SELECT Id,
-															 despacho_id_modalidadenvio,
-															 despacho_id_destinoplanta,
-															 lote_id_proveedorminero,
-															 balanza_placa
-													FROM despachos_primertramo_validaciondatos
-												 WHERE lote_cod_lote IN (" . $arr_lotes . ")
-													 AND guiaremitente_serie IS NOT NULL";
+                        // Control preventivo: Si no hay destino o proveedor, saltar este registro para evitar romper SQL
+                        if (empty($id_destino) || empty($id_proveedorminero)) {
+                            continue; 
+                        }
 
-			if ($res_datos = mysqli_query($enlace, $q_datos)) {
-				if (mysqli_num_rows($res_datos) > 0) {
-					while ($row_datos = mysqli_fetch_array($res_datos)) {
-						$id_distribucion = $row_datos["Id"];
-						$id_modalidadenvio = $row_datos["despacho_id_modalidadenvio"];
-						$id_destino = $row_datos["despacho_id_destinoplanta"];
-						$id_proveedorminero = $row_datos["lote_id_proveedorminero"];
-						$placa = $row_datos["balanza_placa"];
+                        // 1. Obtiene los campos para determinar el Punto de Origen según el Destino
+                        $campo_concesion = 0;
+                        $campo_codigounico = 0;
+                        $campo_ubicacion = 0;
 
-						// 1. Obtiene los campos para determinar el Punto de Origen según el Destino
-						$campo_concesion = 0;
-						$campo_codigounico = 0;
-						$campo_ubicacion = 0;
+                        // CAMBIO: Variable propia ($q_plantas)
+                        $q_plantas = "SELECT puntopartida_concesion,
+                                             puntopartida_codigounico,
+                                             puntopartida_ubicacion
+                                      FROM tbconfig_plantas
+                                      WHERE Id = " . intval($id_destino); // intval por seguridad
 
-						$q_datos = "SELECT puntopartida_concesion,
-																			 puntopartida_codigounico,
-																			 puntopartida_ubicacion
-																	FROM tbconfig_plantas
-																 WHERE Id = " . $id_destino;
+                        // CAMBIO: Variable propia ($res_plantas)
+                        if ($res_plantas = mysqli_query($enlace, $q_plantas)) {
+                            if (mysqli_num_rows($res_plantas) > 0) {
+                                while ($row_plantas = mysqli_fetch_array($res_plantas)) {
+                                    if ($row_plantas["puntopartida_concesion"] == 1) {
+                                        $campo_concesion = 1;
+                                    }
+                                    if ($row_plantas["puntopartida_codigounico"] == 1) {
+                                        $campo_codigounico = 1;
+                                    }
+                                    if ($row_plantas["puntopartida_ubicacion"] == 1) {
+                                        $campo_ubicacion = 1;
+                                    }
+                                }
+                            }
+                        }
 
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								$estado = 1;
+                        // 2. Punto de Partida
+                        $punto_partida = '';
+                        // CAMBIO: Variable propia ($q_clientes)
+                        $q_clientes = "SELECT proveedorminero_concesion,
+                                              proveedorminero_codigounico,
+                                              proveedorminero_ubicacion
+                                       FROM tb_clientes
+                                       WHERE Id = " . intval($id_proveedorminero);
 
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									if ($row_datos["puntopartida_concesion"] == 1) {
-										$campo_concesion = 1;
-									}
+                        if ($res_clientes = mysqli_query($enlace, $q_clientes)) {
+                            if (mysqli_num_rows($res_clientes) > 0) {
+                                while ($row_clientes = mysqli_fetch_array($res_clientes)) {
+                                    if ($campo_concesion == 1) {
+                                        $punto_partida .= $row_clientes["proveedorminero_concesion"] . ', ';
+                                    }
+                                    if ($campo_codigounico == 1) {
+                                        $punto_partida .= 'C.U.: ' . $row_clientes["proveedorminero_codigounico"] . ', ';
+                                    }
+                                    if ($campo_ubicacion == 1) {
+                                        $punto_partida .= $row_clientes["proveedorminero_ubicacion"] . ', ';
+                                    }
+                                }
+                                $punto_partida = substr($punto_partida, 0, -2);
+                            }
+                        }
 
-									if ($row_datos["puntopartida_codigounico"] == 1) {
-										$campo_codigounico = 1;
-									}
+                        // 3. Punto de Destino
+                        $punto_destino = '';
+                        $q_destino = "SELECT direccion
+                                      FROM tb_puntosdestino
+                                      WHERE id_modalidadenvio = " . intval($id_modalidadenvio) . "
+                                        AND id_planta = " . intval($id_destino);
 
-									if ($row_datos["puntopartida_ubicacion"] == 1) {
-										$campo_ubicacion = 1;
-									}
-								}
-							}
-						}
+                        if ($res_destino = mysqli_query($enlace, $q_destino)) {
+                            if (mysqli_num_rows($res_destino) > 0) {
+                                while ($row_destino = mysqli_fetch_array($res_destino)) {
+                                    if ($campo_concesion == 1) {
+                                        $punto_destino .= $row_destino["direccion"] . ', ';
+                                    }
+                                }
+                                // Limpieza opcional de coma final si aplica
+                                if (!empty($punto_destino)) {
+                                    $punto_destino = substr($punto_destino, 0, -2);
+                                }
+                            }
+                        }
 
-						// 2. Punto de Partida
-						$punto_partida = '';
+                        // 4. Destinatario
+                        $destinatario = '';
+                        $q_destinatario = "SELECT CONCAT(ruc, ' - ', razon_social) AS DESTINATARIO
+                                           FROM tbconfig_destinatarios
+                                           WHERE id_modalidadenvio = " . intval($id_modalidadenvio) . "
+                                             AND id_planta = " . intval($id_destino);
 
-						$q_datos = "SELECT proveedorminero_concesion,
-																			 proveedorminero_codigounico,
-																			 proveedorminero_ubicacion
-																	FROM tb_clientes
-																 WHERE Id = " . $id_proveedorminero;
+                        if ($res_destinatario = mysqli_query($enlace, $q_destinatario)) {
+                            if (mysqli_num_rows($res_destinatario) > 0) {
+                                while ($row_destinatario = mysqli_fetch_array($res_destinatario)) {
+                                    $destinatario = $row_destinatario["DESTINATARIO"];
+                                }
+                            }
+                        }
 
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									if ($campo_concesion == 1) {
-										$punto_partida .= $row_datos["proveedorminero_concesion"] . ', ';
-									}
+                        // 5. Información de Placa 1
+                        $transportista = '';
+                        $codigo_mtc_1 = '';
+                        $marca_1 = '';
+                        $chofer = '';
+                        $capacidad = 0;
 
-									if ($campo_codigounico == 1) {
-										$punto_partida .= 'C.U.: ' . $row_datos["proveedorminero_codigounico"] . ', ';
-									}
+                        $q_transporte = "SELECT U.id_Transportista, U.codigo_mtc, U.id_marca, U.id_choferes, U.nCapacidad
+                                         FROM transporte U
+                                         INNER JOIN tb_clientes ET ON U.id_Transportista = ET.Id
+                                         WHERE U.cplaca = '" . mysqli_real_escape_string($enlace, $placa) . "'";
 
-									if ($campo_ubicacion == 1) {
-										$punto_partida .= $row_datos["proveedorminero_ubicacion"] . ', ';
-									}
-								}
+                        if ($res_transporte = mysqli_query($enlace, $q_transporte)) {
+                            if (mysqli_num_rows($res_transporte) > 0) {
+                                while ($row_transporte = mysqli_fetch_array($res_transporte)) {
+                                    $transportista = $row_transporte["id_Transportista"];
+                                    $chofer = $row_transporte["id_choferes"];
+                                    $codigo_mtc_1 = $row_transporte["codigo_mtc"];
+                                    $marca_1 = $row_transporte["id_marca"];
+                                    $capacidad = ((strlen($row_transporte["nCapacidad"]) > 0) ? number_format($row_transporte["nCapacidad"] / 1000, 2, '.', '') : 0);
+                                }
+                            }
+                        }
 
-								$punto_partida = substr($punto_partida, 0, -2);
-							}
-						}
+                        // 6. Verifica y obtiene información de Placa 2
+                        $codigo_mtc_2 = '';
+                        $marca_2 = '';
+                        $capacidad_2 = 0;
 
-						// 3. Punto de Destino
-						$punto_destino = '';
+                        $q_placa2 = "SELECT U.codigo_mtc, U.id_marca, U.nCapacidad
+                                     FROM despachos_primertramo_validaciondatos V
+                                     INNER JOIN transporte U ON V.balanza_placa2 = U.cplaca
+                                     WHERE V.Id = " . intval($id_distribucion);
 
-						$q_datos = "SELECT direccion
-																	FROM tb_puntosdestino
-																 WHERE id_modalidadenvio = " . $id_modalidadenvio . "
-																	 AND id_planta = " . $id_destino;
+                        if ($res_placa2 = mysqli_query($enlace, $q_placa2)) {
+                            if (mysqli_num_rows($res_placa2) > 0) {
+                                while ($row_placa2 = mysqli_fetch_array($res_placa2)) {
+                                    $codigo_mtc_2 = $row_placa2["codigo_mtc"];
+                                    $marca_2 = $row_placa2["id_marca"];
+                                    $capacidad_2 = ((strlen($row_placa2["nCapacidad"]) > 0) ? number_format($row_placa2["nCapacidad"] / 1000, 2, '.', '') : 0);
+                                }
+                            }
+                        }
 
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									if ($campo_concesion == 1) {
-										$punto_destino .= $row_datos["direccion"] . ', ';
-									}
-								}
-							}
-						}
+                        // 7. Motivo de Traslado
+                        $motivo_traslado = '';
+                        $q_motivo = "SELECT UPPER(descripcion) AS MOTIVO_TRASLADO
+                                     FROM tbconfig_guiamotivostraslado
+                                     WHERE id_modalidadenvio = " . intval($id_modalidadenvio) . "
+                                       AND id_planta = " . intval($id_destino);
 
-						// 4. Destinatario
-						$destinatario = '';
+                        if ($res_motivo = mysqli_query($enlace, $q_motivo)) {
+                            if (mysqli_num_rows($res_motivo) > 0) {
+                                while ($row_motivo = mysqli_fetch_array($res_motivo)) {
+                                    $motivo_traslado = $row_motivo["MOTIVO_TRASLADO"];
+                                }
+                            }
+                        }
 
-						$q_datos = "SELECT CONCAT(ruc, ' - ', razon_social) AS DESTINATARIO
-																	FROM tbconfig_destinatarios
-																 WHERE id_modalidadenvio = " . $id_modalidadenvio . "
-																	 AND id_planta = " . $id_destino;
+                        // Actualiza datos en tabla de Validación
+                        $q_final_update = "UPDATE despachos_primertramo_validaciondatos SET
+                                            guias_puntopartida = '" . mysqli_real_escape_string($enlace, $punto_partida) . "',
+                                            guias_puntodestino = '" . mysqli_real_escape_string($enlace, $punto_destino) . "',
+                                            guias_destinatario = '" . mysqli_real_escape_string($enlace, $destinatario) . "',
+                                            guias_motivotraslado = '" . mysqli_real_escape_string($enlace, $motivo_traslado) . "',
+                                            balanza_id_transportista = '" . mysqli_real_escape_string($enlace, $transportista) . "',
+                                            balanza_id_chofer = '" . mysqli_real_escape_string($enlace, $chofer) . "',
+                                            unidad_constanciamtc = '" . mysqli_real_escape_string($enlace, $codigo_mtc_1) . "',
+                                            unidad_idmarca = '" . mysqli_real_escape_string($enlace, $marca_1) . "',
+                                            unidad_capacidad = '" . mysqli_real_escape_string($enlace, $capacidad) . "',
+                                            unidad_constanciamtc2 = '" . mysqli_real_escape_string($enlace, $codigo_mtc_2) . "',
+                                            unidad_idmarca2 = '" . mysqli_real_escape_string($enlace, $marca_2) . "',
+                                            unidad_capacidad2 = '" . mysqli_real_escape_string($enlace, $capacidad_2) . "'
+                                           WHERE Id = " . intval($id_distribucion);
 
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									$destinatario = $row_datos["DESTINATARIO"];
-								}
-							}
-						}
+                        mysqli_query($enlace, $q_final_update);
+                    }
+                }
+            }
+        }
 
-						// 5. Información de Placa 1
-						$transportista = '';
-						$codigo_mtc_1 = '';
-						$marca_1 = '';
-						$chofer = '';
-						$capacidad = 0;
-
-						$q_datos = "SELECT U.id_Transportista,
-																			 U.codigo_mtc,
-																			 U.id_marca,
-																			 U.id_choferes,
-																			 U.nCapacidad
-																	FROM transporte U
-																			 INNER JOIN tb_clientes ET ON U.id_Transportista = ET.Id
-																 WHERE U.cplaca = '" . $placa . "'";
-
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									$transportista = $row_datos["id_Transportista"];
-									$chofer = $row_datos["id_choferes"];
-									$codigo_mtc_1 = $row_datos["codigo_mtc"];
-									$marca_1 = $row_datos["id_marca"];
-									$capacidad = ((strlen($row_datos["nCapacidad"]) > 0) ? number_format($row_datos["nCapacidad"] / 1000, 2, '.', '') : 0);
-								}
-							}
-						}
-
-						// 6. Verifica y obtiene información de Placa 2
-						$codigo_mtc_2 = '';
-						$marca_2 = '';
-						$capacidad_2 = 0;
-
-						$q_placa2 = "SELECT U.codigo_mtc,
-																				U.id_marca,
-																				U.nCapacidad
-																	 FROM despachos_primertramo_validaciondatos V
-																				INNER JOIN transporte U ON V.balanza_placa2 = U.cplaca
-																	WHERE V.Id = " . $id_distribucion;
-
-						if ($res_placa2 = mysqli_query($enlace, $q_placa2)) {
-							if (mysqli_num_rows($res_placa2) > 0) {
-								while ($row_placa2 = mysqli_fetch_array($res_placa2)) {
-									$codigo_mtc_2 = $row_placa2["codigo_mtc"];
-									$marca_2 = $row_placa2["id_marca"];
-									$capacidad_2 = ((strlen($row_placa2["nCapacidad"]) > 0) ? number_format($row_placa2["nCapacidad"] / 1000, 2, '.', '') : 0);
-								}
-							}
-						}
-
-						// 7. Motivo de Traslado
-						$motivo_traslado = '';
-
-						$q_datos = "SELECT UPPER(descripcion) AS MOTIVO_TRASLADO
-																	FROM tbconfig_guiamotivostraslado
-																 WHERE id_modalidadenvio = " . $id_modalidadenvio . "
-																	 AND id_planta = " . $id_destino;
-
-						if ($res_datos = mysqli_query($enlace, $q_datos)) {
-							if (mysqli_num_rows($res_datos) > 0) {
-								while ($row_datos = mysqli_fetch_array($res_datos)) {
-									$motivo_traslado = $row_datos["MOTIVO_TRASLADO"];
-								}
-							}
-						}
-
-						// Actualiza datos en tabla de Validación
-						$q_update = "UPDATE despachos_primertramo_validaciondatos SET";
-						$q_update .= "  guias_puntopartida = '" . $punto_partida . "'";
-						$q_update .= ", guias_puntodestino = '" . $punto_destino . "'";
-						$q_update .= ", guias_destinatario = '" . $destinatario . "'";
-						$q_update .= ", guias_motivotraslado = '" . $motivo_traslado . "'";
-						$q_update .= ", balanza_id_transportista = '" . $transportista . "'";
-						$q_update .= ", balanza_id_chofer = '" . $chofer . "'";
-						$q_update .= ", unidad_constanciamtc = '" . $codigo_mtc_1 . "'";
-						$q_update .= ", unidad_idmarca = '" . $marca_1 . "'";
-						$q_update .= ", unidad_capacidad = '" . $capacidad . "'";
-						$q_update .= ", unidad_constanciamtc2 = '" . $codigo_mtc_1 . "'";
-						$q_update .= ", unidad_idmarca2 = '" . $marca_1 . "'";
-						$q_update .= ", unidad_capacidad2 = '" . $capacidad_2 . "'";
-						$q_update .= " WHERE Id = " . $id_distribucion;
-
-						if ($res_update = mysqli_query($enlace, $q_update)) {
-						}
-					}
-				}
-			}
-		}
-
-		echo json_encode(array('estado' => $estado, 'cerrado_fechahoraregistro' => $g_fecha, 'cerrado_usuarioregistro' => $usuario_registro));
-
-		break;
+        echo json_encode(array('estado' => $estado, 'cerrado_fechahoraregistro' => $g_fecha, 'cerrado_usuarioregistro' => $usuario_registro));
+        break;
 
 	case 'reabrir_PrimerTramo_ValidacionDistribucion':
 		$estado = 0;
