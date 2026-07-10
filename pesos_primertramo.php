@@ -1073,6 +1073,43 @@
               </div>
             </div>
 
+            <div id="div_guias_seccion" style="border: solid; border-width: 1px; border-color: #E6E9ED; border-radius: 7px; background-color: #f0efe8; padding: 5px; margin-bottom: 5px; display: none;">
+              <div class="d-flex" style="padding: 5px;">
+                <div class="col-md-12 col-sm-12 col-xs-12" style="padding: 5px;">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" role="switch" id="chk_registrar_guias" onchange="f_toggleGuias();">
+                    <label class="form-check-label" for="chk_registrar_guias" style="font-weight: bold; font-size: 14px;">Registrar Guías (opcional)</label>
+                  </div>
+                </div>
+              </div>
+              <div id="div_guias_inputs" style="display: none;">
+                <div class="d-flex" style="padding: 5px; align-items: center;">
+                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 13px;">
+                    G. Remitente:
+                  </div>
+                  <div class="col-md-3 col-sm-3 col-xs-3">
+                    <input id="guia_remitente_serie" type="text" class="form-control" placeholder="Serie" style="text-align: center; text-transform: uppercase;" maxlength="64">
+                  </div>
+                  <div class="col-md-1 col-sm-1 col-xs-1" style="text-align: center; font-weight: bold; padding: 0px;">-</div>
+                  <div class="col-md-4 col-sm-4 col-xs-4">
+                    <input id="guia_remitente_numero" type="text" class="form-control" placeholder="Número" style="text-align: center; text-transform: uppercase;" maxlength="64">
+                  </div>
+                </div>
+                <div class="d-flex" style="padding: 5px; align-items: center;">
+                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 13px;">
+                    G. Transportista:
+                  </div>
+                  <div class="col-md-3 col-sm-3 col-xs-3">
+                    <input id="guia_transportista_serie" type="text" class="form-control" placeholder="Serie" style="text-align: center; text-transform: uppercase;" maxlength="64">
+                  </div>
+                  <div class="col-md-1 col-sm-1 col-xs-1" style="text-align: center; font-weight: bold; padding: 0px;">-</div>
+                  <div class="col-md-4 col-sm-4 col-xs-4">
+                    <input id="guia_transportista_numero" type="text" class="form-control" placeholder="Número" style="text-align: center; text-transform: uppercase;" maxlength="64">
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div id="div_pesoinicial" style="border: solid; border-width: 1px; border-color: #E6E9ED; border-radius: 7px; background-color: #f0efe8; padding: 5px; margin-bottom: 5px;">
               <div class="d-flex" style="padding: 5px;">
                 <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 14px; text-align: center;">
@@ -1953,6 +1990,14 @@
 
         // Setea objetos
           if (_is_pesoinicial == 1){
+            $("#div_guias_seccion").show();
+            $("#chk_registrar_guias").prop('checked', false);
+            $("#div_guias_inputs").hide();
+            $("#guia_remitente_serie").val('');
+            $("#guia_remitente_numero").val('');
+            $("#guia_transportista_serie").val('');
+            $("#guia_transportista_numero").val('');
+
             $(".show_pesoinicial").prop('disabled', false);
             $("#lote_pesoinicial").val('');
             $("#lote_pesoinicial_observacion").val('');
@@ -1966,6 +2011,14 @@
             $("#div_pesoneto").hide();
           }
           else{
+            $("#div_guias_seccion").hide();
+            $("#chk_registrar_guias").prop('checked', false);
+            $("#div_guias_inputs").hide();
+            $("#guia_remitente_serie").val('');
+            $("#guia_remitente_numero").val('');
+            $("#guia_transportista_serie").val('');
+            $("#guia_transportista_numero").val('');
+
             $(".show_pesoinicial").prop('disabled', true);
             $("#lote_pesobruto").val(_peso_inicial);
             $("#lote_pesoinicial").val(_peso_inicial);
@@ -1988,6 +2041,18 @@
           f_getPeso(1);
 
         f_OpenModal('modal_gestionlotes');
+      }
+
+      function f_toggleGuias() {
+        if ($("#chk_registrar_guias").prop('checked')) {
+          $("#div_guias_inputs").show(500);
+        } else {
+          $("#div_guias_inputs").hide(500);
+          $("#guia_remitente_serie").val('');
+          $("#guia_remitente_numero").val('');
+          $("#guia_transportista_serie").val('');
+          $("#guia_transportista_numero").val('');
+        }
       }
 
       function f_getPeso(_on){
@@ -2867,7 +2932,7 @@
             }, "json");
       }
 
-      function f_ConfirmarLote(){
+       function f_ConfirmarLote(){
         // Obteniendo datos
           var _id_ingreso = $("#hd_ingreso").val();
           var _id_lote = $("#hd_idlote").val();
@@ -2883,12 +2948,35 @@
           var _tipomaterial = $("#lote_tipomaterial").val();
           var _observacion = $("#lote_observacion").val();
 
+          var _serie_guia_remitente = '';
+          var _numero_guia_remitente = '';
+          var _serie_guia_transportista = '';
+          var _numero_guia_transportista = '';
+
         // Validando datos
           if (_is_pesoinicial == 1){
             if (_peso_inicial <= 0){
               alert("El Peso Inicial no es válido.");
 
               return;
+            }
+
+            // Validar Guías si se activa la opción
+            if ($("#chk_registrar_guias").prop('checked')) {
+              var s_rem = $("#guia_remitente_serie").val().trim();
+              var n_rem = $("#guia_remitente_numero").val().trim();
+              var s_tra = $("#guia_transportista_serie").val().trim();
+              var n_tra = $("#guia_transportista_numero").val().trim();
+
+              if (s_rem.length == 0 || n_rem.length == 0 || s_tra.length == 0 || n_tra.length == 0) {
+                alert("Debe completar todos los datos de las guías si activa el registro.");
+                return;
+              }
+
+              _serie_guia_remitente = s_rem;
+              _numero_guia_remitente = n_rem;
+              _serie_guia_transportista = s_tra;
+              _numero_guia_transportista = n_tra;
             }
           }
           else{
@@ -2909,13 +2997,14 @@
           }
 
         // Guardando datos
-          $.post( "apis/backend.php", { accion: "grabar_GestionLotes", id_ingreso: _id_ingreso, id_lote: _id_lote, is_pesoinicial: _is_pesoinicial, peso_inicial: _peso_inicial, peso_final: _peso_final, tipocarga: _tipocarga, zonaorigen: _zonaorigen, proveedorminero: _proveedorminero, encargado: _encargado, producto: _producto, tipomaterial: _tipomaterial, observacion: _observacion }, 
+          $.post( "apis/backend.php", { accion: "grabar_GestionLotes", id_ingreso: _id_ingreso, id_lote: _id_lote, is_pesoinicial: _is_pesoinicial, peso_inicial: _peso_inicial, peso_final: _peso_final, tipocarga: _tipocarga, zonaorigen: _zonaorigen, proveedorminero: _proveedorminero, encargado: _encargado, producto: _producto, tipomaterial: _tipomaterial, observacion: _observacion, serie_guia_remitente: _serie_guia_remitente, numero_guia_remitente: _numero_guia_remitente, serie_guia_transportista: _serie_guia_transportista, numero_guia_transportista: _numero_guia_transportista }, 
             function( data ) {
               if(data.estado == 1){
                 // Si es Peso Final debe imprimir el Ticket
                 // MAX (15/04/2023 14:12): Debe imprimir tanto en el primer como en el segundo peso
                   // if (_is_pesoinicial == 0){
-                    window.open('print_ticketbalanza_prev.php?x=' + data.id_md5);
+                    // window.open('print_ticketbalanza_prev.php?x=' + data.id_md5);
+                    window.open('print_ticketbalanza.php?x=' + data.id_md5);
                   // }
 
                 f_cerrarModal('modal_gestionlotes');

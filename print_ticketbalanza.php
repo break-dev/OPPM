@@ -281,94 +281,82 @@ $guia_transportista = '';
 
 $m = 1;
 
-$q_balanza = "SELECT V.Id,
-												 MD5(V.Id) AS ID_MD5,
-												 V.lote_id_lote,
-												 V.lote_cod_lote,
-												 V.lote_num_ticket,
-												 V.lote_ticket_orden,
-												 /*V.guias_ticketbalanza,*/
-												 CRL.num_ticketbalanza AS guias_ticketbalanza,
-												 DATE(CRL.fecha_ingresobalanza) AS FECHA_TICKET,
-												 V.balanza_placa,
-												 CL_T.documento AS TRANSPORTISTA_RUC,
-												 UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
+$q_balanza = "
+SELECT
+    V.Id,
+    MD5(V.Id) AS ID_MD5,
+    V.lote_id_lote,
+    V.lote_cod_lote,
+    V.lote_num_ticket,
+    V.lote_ticket_orden,
+    CRL.num_ticketbalanza AS guias_ticketbalanza,
+    DATE(CRL.fecha_ingresobalanza) AS FECHA_TICKET,
+    V.balanza_placa,
+    CL_T.documento AS TRANSPORTISTA_RUC,
+    UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
+    TV.descripcion AS TIPO_VEHICULO,
+    CD.dni_licencia AS CONDUCTOR_DNI,
+    CD.nombres AS CONDUCTOR_NOMBRES,
+    V.lote_id_tipocarga,
+    TC.descripcion AS TIPO_CARGA,
+    V.lote_id_zonaorigen,
+    ZO.descripcion AS ZONA_ORIGEN,
+    V.lote_id_proveedorminero,
+    CL.documento AS PROVEEDORMINERO_RUC,
+    UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
+    CL.proveedorminero_concesion,
+    CL.proveedorminero_codigounico,
+    CL.proveedorminero_ubicacion,
+    CL.proveedorminero_ubicacion_departamento,
+    CL.proveedorminero_ubicacion_provincia,
+    CASE 
+		WHEN CCS.procedencia_distrito IS NULL THEN ZO.descripcion 
+    	WHEN V.lote_id_zonaorigen = 25 OR lot.balanza_id_zonaorigen = 25 THEN ZO.descripcion 
+        ELSE CCS.procedencia_distrito
+	END AS procedencia_distrito,
+	V.lote_id_encargadomuestra,
+	UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
+	V.lote_id_producto,
+	UPPER(P.descripcion) AS PRODUCTO,
+	V.lote_id_tipomineral,
+    TM.descripcion AS TIPO_MATERIAL,
+    V.despacho_observacion,
+    V.lote_pesoinicial_fechahoraregistro,
+    V.lote_pesofinal_fechahoraregistro,
+    V.lote_peso_inicial AS lote_peso_bruto,
+    V.lote_peso_final AS lote_peso_tara,
+    V.lote_peso_neto,
+    V.operaciones_humedad,
+    V.lote_peso_seco,
+    V.unidad_capacidad,
+    V.unidad_tara,
+    V.unidad_idmarca,
+    V.despacho_color,
+    V.is_cerrado,
+    V.cerrado_fechahoraregistro,
+    V.cerrado_usuarioregistro,
+    COALESCE(V.guiaremitente_serie, lot.serie_guia_remitente) as guiaremitente_serie,
+    COALESCE(V.guiaremitente_serie, lot.numero_guia_remitente) as guiaremitente_numero,
+    COALESCE(V.guiaremitente_serie, lot.serie_guia_transportista) as guiatransportista_serie,
+    COALESCE(V.guiaremitente_serie, lot.numero_guia_transportista) as guiatransportista_numero
+FROM
+    despachos_primertramo_validaciondatos V
 
-												 TV.descripcion AS TIPO_VEHICULO,
+INNER JOIN catalogolotes lot on lot.id_CatalogoLotes = V.lote_id_lote
+LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
+LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
+LEFT JOIN tbconfig_tipovehiculo TV ON T.id_tipovehiculo = TV.Id
+LEFT JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
+LEFT JOIN tbconfig_zonaorigen ZO ON V.lote_id_zonaorigen = ZO.Id OR ZO.Id = lot.balanza_id_zonaorigen
+LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
+LEFT JOIN tbconfig_proveedoresmineros_concesion CCS ON V.lote_id_proveedorminero_concesion = CCS.Id
+LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
+LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
+LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id
+LEFT JOIN tbconfig_producto P ON V.lote_id_producto = P.Id
+LEFT JOIN consolidado_lotes_cierrecontable CRL ON V.Id = CRL.id_registro AND CRL.id_tipoingreso = 1
 
-												 CD.dni_licencia AS CONDUCTOR_DNI,
-												 CD.nombres AS CONDUCTOR_NOMBRES,
-
-												 V.lote_id_tipocarga,
-												 TC.descripcion AS TIPO_CARGA,
-
-												 V.lote_id_zonaorigen,
-												 ZO.descripcion AS ZONA_ORIGEN,
-
-												 V.lote_id_proveedorminero,
-												 CL.documento AS PROVEEDORMINERO_RUC,
-												 UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
-												 CL.proveedorminero_concesion,
-												 CL.proveedorminero_codigounico,
-												 CL.proveedorminero_ubicacion,
-												 CL.proveedorminero_ubicacion_departamento,
-												 CL.proveedorminero_ubicacion_provincia,
-												 /*CL.proveedorminero_ubicacion_distrito,*/
-
-												 CASE WHEN V.lote_id_zonaorigen = 25
-												   THEN ZO.descripcion
-												 ELSE CCS.procedencia_distrito END AS procedencia_distrito,
-
-												 V.lote_id_encargadomuestra,
-												 UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
-
-												 V.lote_id_producto,
-												 UPPER(P.descripcion) AS PRODUCTO,
-
-												 V.lote_id_tipomineral,
-												 TM.descripcion AS TIPO_MATERIAL,
-
-												 V.despacho_observacion,
-
-												 
-												 V.lote_pesoinicial_fechahoraregistro,
-												 V.lote_pesofinal_fechahoraregistro,
-												 V.lote_peso_inicial AS lote_peso_bruto,
-												 V.lote_peso_final AS lote_peso_tara,
-												 V.lote_peso_neto,
-												 V.operaciones_humedad,
-												 V.lote_peso_seco,
-												 V.unidad_capacidad,
-												 V.unidad_tara,
-												 V.unidad_idmarca,
-												 V.despacho_color,
-
-												 V.is_cerrado,
-												 V.cerrado_fechahoraregistro,
-												 V.cerrado_usuarioregistro,
-
-												 V.guiaremitente_serie,
-												 V.guiaremitente_numero,
-												 V.guiatransportista_serie,
-												 V.guiatransportista_numero
-
-									  FROM despachos_primertramo_validaciondatos V
-									  		 LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
-									  		 INNER JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
-									  		 INNER JOIN tbconfig_tipovehiculo TV ON T.id_tipovehiculo = TV.Id
-									  		 INNER JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
-									  		 LEFT JOIN tbconfig_zonaorigen ZO ON V.lote_id_zonaorigen = ZO.Id
-									  		 LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
-									  		 LEFT JOIN tbconfig_proveedoresmineros_concesion CCS ON V.lote_id_proveedorminero_concesion = CCS.Id
-									  		 LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
-									  		 LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
-												 LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id
-										 		 /*INNER JOIN guia_remision_detalle GRD ON V.Id = GRD.id_despachos_primertramo_validaciondatos
-										 		 INNER JOIN guia_remision GR ON GRD.id_Guia_remision = GR.id_Guia_remision*/
-										 		 LEFT JOIN tbconfig_producto P ON V.lote_id_producto = P.Id
-									 			 LEFT JOIN consolidado_lotes_cierrecontable CRL ON V.Id = CRL.id_registro
-									 			   AND CRL.id_tipoingreso = 1
-									 WHERE MD5(V.Id) = '" . $id_md5 . "'";
+WHERE MD5(V.Id) = '" . $id_md5 . "'";
 
 if ($res_balanza = mysqli_query($enlace, $q_balanza)) {
 	if (mysqli_num_rows($res_balanza) > 0) {
