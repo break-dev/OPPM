@@ -1,25 +1,30 @@
 <?php
 
-	session_start();
+session_start();
 
-	include('cnx/cnx.php');
-	include('global/variables.php');
-	include('libs/barcode.php');
+include('cnx/cnx.php');
+include('global/variables.php');
+include('libs/barcode.php');
 
-	require_once 'dompdf/autoload.inc.php';
+require_once 'dompdf/autoload.inc.php';
 
-	use Dompdf\Dompdf;
-	use Dompdf\Options;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
-	// Recuperando parámetros
-		$id_md5 = $_GET["x"];
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 
-	// Ruta imágenes
-    $ruta_images = 'https://'.$_SERVER["HTTP_HOST"].$_SERVER["REQUEST_URI"];
-    $ruta_images = substr($ruta_images, 0, strpos($ruta_images, 'print_etiquetashumedad.php')).'images/';
 
-  // Inicia html
-    $html = '<!DOCTYPE html>
+// Recuperando parámetros
+$id_md5 = $_GET["x"];
+
+// Ruta imágenes
+$ruta_images = 'https://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+$ruta_images = substr($ruta_images, 0, strpos($ruta_images, 'print_etiquetashumedad.php')) . 'images/';
+
+// Inicia html
+$html = '<!DOCTYPE html>
 							<html lang="es">
 								<head>
 					        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -61,31 +66,31 @@
 
 						    <body style="width: 100%; padding: 0px;">';
 
-  // Obtiene los datos de cada muestra
-    $cod_lote = '';
-    $fecha_registro = '';
-    $hora_registro = '';
+// Obtiene los datos de cada muestra
+$cod_lote = '';
+$fecha_registro = '';
+$hora_registro = '';
 
-    $q_datos = "SELECT L.ccod_Lote,
+$q_datos = "SELECT L.ccod_Lote,
     									 L.dFechaIngreso,
     									 L.tHora_Ingreso
 									FROM catalogolotes L
-								 WHERE md5(L.id_CatalogoLotes) = '".$id_md5."'";
+								 WHERE md5(L.id_CatalogoLotes) = '" . $id_md5 . "'";
 
-		if ($res_datos = mysqli_query($enlace, $q_datos)){
-			if (mysqli_num_rows($res_datos) > 0) {
-				while($row_datos = mysqli_fetch_array($res_datos)){
-					// Recuperando valores
-						$cod_lote = $row_datos["ccod_Lote"];
-						$fecha_registro = $row_datos["dFechaIngreso"];
-						$hora_registro = $row_datos["tHora_Ingreso"];
+if ($res_datos = mysqli_query($enlace, $q_datos)) {
+	if (mysqli_num_rows($res_datos) > 0) {
+		while ($row_datos = mysqli_fetch_array($res_datos)) {
+			// Recuperando valores
+			$cod_lote = $row_datos["ccod_Lote"];
+			$fecha_registro = $row_datos["dFechaIngreso"];
+			$hora_registro = $row_datos["tHora_Ingreso"];
 
-					// Genera los códigos de barra
-						barcode( 'images/bc/'.$cod_lote.'A.png', $cod_lote.'A', 20, 'horizontal', 'code128', false );
-						barcode( 'images/bc/'.$cod_lote.'B.png', $cod_lote.'B', 20, 'horizontal', 'code128', false );
+			// Genera los códigos de barra
+			barcode('images/bc/' . $cod_lote . 'A.png', $cod_lote . 'A', 20, 'horizontal', 'code128', false);
+			barcode('images/bc/' . $cod_lote . 'B.png', $cod_lote . 'B', 20, 'horizontal', 'code128', false);
 
-					// Pintando Etiquetas
-						$html .= '<div style="width: 102mm; height: 24mm; margin: 0px; pading: 0px;">
+			// Pintando Etiquetas
+			$html .= '<div style="width: 102mm; height: 24mm; margin: 0px; pading: 0px;">
 												<table style="width: 101.4mm; border-spacing: 0; margin: 0px;">
 													<tr>
 														<td style="border-spacing: 0; width: 55mm; margin: 0px;">
@@ -95,18 +100,18 @@
 																		<tr style="font-size: 10px; font-family: AgencyFBb;">
 																			<td colspan="2" style="text-align: center;">
 																				<div style="width: 50mm; height: 15mm; margin-top: 0px; margin-left: -25px; margin-right: 50px; font-size: 28px;">
-																					'.$cod_lote.'.A
+																					' . $cod_lote . '.A
 																				</div>
 																			</td>
 
 																			<td style="text-align: right;">
 																				<div style="width: 17mm; height: 10mm; margin-right: -15px; margin-top: 5px; text-align: right;">
 																					<div style="width: 100%; font-size: 11px;">
-																						'.$fecha_registro.'
+																						' . $fecha_registro . '
 																					</div>
 
 																					<div style="margin-top: -5px; font-size: 10px;">
-																						'.$hora_registro.'
+																						' . $hora_registro . '
 																					</div>
 																				</div>
 																			</td>
@@ -115,7 +120,7 @@
 																		<tr style="font-size: 11px; font-weight: bold;">
 																			<td colspan="3">
 																				<div style="width: 100%; margin-top: -10px; text-align: center;">
-																					<img src="'.$ruta_images.'bc/'.$cod_lote.'A.png" style="height: 25px; width: 90%;"/>
+																					<img src="' . $ruta_images . 'bc/' . $cod_lote . 'A.png" style="height: 25px; width: 90%;"/>
 																				</div>
 																			</td>
 																		</tr>
@@ -139,18 +144,18 @@
 																		<tr style="font-size: 10px; font-family: AgencyFBb;">
 																			<td colspan="2" style="text-align: center;">
 																				<div style="width: 50mm; height: 15mm; margin-top: 0px; margin-left: -25px; margin-right: 50px; font-size: 28px;">
-																					'.$cod_lote.'.B
+																					' . $cod_lote . '.B
 																				</div>
 																			</td>
 
 																			<td style="text-align: right;">
 																				<div style="width: 17mm; height: 10mm; margin-right: -15px; margin-top: 5px; text-align: right;">
 																					<div style="width: 100%; font-size: 11px;">
-																						'.$fecha_registro.'
+																						' . $fecha_registro . '
 																					</div>
 
 																					<div style="margin-top: -5px; font-size: 10px;">
-																						'.$hora_registro.'
+																						' . $hora_registro . '
 																					</div>
 																				</div>
 																			</td>
@@ -159,7 +164,7 @@
 																		<tr style="font-size: 11px; font-weight: bold;">
 																			<td colspan="3">
 																				<div style="width: 100%; margin-top: -10px; text-align: center;">
-																					<img src="'.$ruta_images.'bc/'.$cod_lote.'B.png" style="height: 25px; width: 90%;"/>
+																					<img src="' . $ruta_images . 'bc/' . $cod_lote . 'B.png" style="height: 25px; width: 90%;"/>
 																				</div>
 																			</td>
 																		</tr>
@@ -178,22 +183,22 @@
 													</tr>
 												</table>
 											</div>';
-				}
-			}
 		}
+	}
+}
 
-	$html .= '		</body>
+$html .= '		</body>
 			  		</html>';
 
 // echo '$html: '.$html;
 // return;
-	$options = new Options();
-  $options->set('isRemoteEnabled', TRUE);
-  $document = new Dompdf($options);
+$options = new Options();
+$options->set('isRemoteEnabled', TRUE);
+$document = new Dompdf($options);
 
-	$document -> loadHtml($html, 'UTF-8');
-	$document -> setPaper(array(0, 0, 291, 77));
-	$document -> render();
-	$document -> stream("Recibo - ".$recibo_codigo, array('Attachment' => 0));
+$document->loadHtml($html, 'UTF-8');
+$document->setPaper(array(0, 0, 291, 77));
+$document->render();
+$document->stream("Recibo - " . $recibo_codigo, array('Attachment' => 0));
 
 ?>

@@ -234,17 +234,17 @@
 	function f_CheckVisitas(){
 		$("#tst_visitas").html('');
 
-		$.post( "apis/backend.php", { accion: "check_visitas" }, 
-			function( data ) {
-				if(data.estado == 1){
-					$("#tst_visitas").html(data.html);
+		// $.post( "apis/backend.php", { accion: "check_visitas" }, 
+		// 	function( data ) {
+		// 		if(data.estado == 1){
+		// 			$("#tst_visitas").html(data.html);
 
-					setTimeout('f_CheckVisitas()', 20000);
+		// 			setTimeout('f_CheckVisitas()', 20000);
 
-					return;
-				}
+		// 			return;
+		// 		}
 
-			}, "json");
+		// 	}, "json");
 	}
 
 	function f_CheckModoAuditoria(){
