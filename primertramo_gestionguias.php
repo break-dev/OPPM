@@ -814,6 +814,14 @@ if (!isset($_SESSION["Id"])) {
 									</th>
 
 									<th style="text-align: center; border: solid; border-width: 1px; background-color: #37393c; border-color: #ffffff; color: #ffffff; vertical-align: middle; width: 120px;">
+										Guía Remitente
+									</th>
+
+									<th style="text-align: center; border: solid; border-width: 1px; background-color: #37393c; border-color: #ffffff; color: #ffffff; vertical-align: middle; width: 120px;">
+										Guía Transportista
+									</th>
+
+									<th style="text-align: center; border: solid; border-width: 1px; background-color: #37393c; border-color: #ffffff; color: #ffffff; vertical-align: middle; width: 120px;">
 										Peso Distrbuído<br>Real
 									</th>
 
@@ -1604,6 +1612,50 @@ if (!isset($_SESSION["Id"])) {
 
 						if (_is_edit != 1) {
 							$("#guia_conductor").val(data.chofer);
+
+							// Autocompletar guías si coinciden y al menos una tiene datos
+							var arr_guias = data.arr_guias || [];
+							var tiene_guias = false;
+							var todos_iguales = true;
+							var primera_remitente_serie = null;
+							var primera_remitente_numero = null;
+							var primera_transportista_serie = null;
+							var primera_transportista_numero = null;
+
+							for (var i = 0; i < arr_guias.length; i++) {
+								var g = arr_guias[i];
+								if ((g.serie_remitente && g.serie_remitente.length > 0) ||
+										(g.numero_remitente && g.numero_remitente.length > 0) ||
+										(g.serie_transportista && g.serie_transportista.length > 0) ||
+										(g.numero_transportista && g.numero_transportista.length > 0)) {
+									tiene_guias = true;
+								}
+								if (i === 0) {
+									primera_remitente_serie = g.serie_remitente || '';
+									primera_remitente_numero = g.numero_remitente || '';
+									primera_transportista_serie = g.serie_transportista || '';
+									primera_transportista_numero = g.numero_transportista || '';
+								} else {
+									if ((g.serie_remitente || '') !== primera_remitente_serie ||
+											(g.numero_remitente || '') !== primera_remitente_numero ||
+											(g.serie_transportista || '') !== primera_transportista_serie ||
+											(g.numero_transportista || '') !== primera_transportista_numero) {
+										todos_iguales = false;
+									}
+								}
+							}
+
+							if (tiene_guias && todos_iguales) {
+								$("#guia_remitenteserie").val(primera_remitente_serie);
+								$("#guia_remitentenumero").val(primera_remitente_numero);
+								$("#guia_transportistaserie").val(primera_transportista_serie);
+								$("#guia_transportistanumero").val(primera_transportista_numero);
+							} else {
+								$("#guia_remitenteserie").val('');
+								$("#guia_remitentenumero").val('');
+								$("#guia_transportistaserie").val('');
+								$("#guia_transportistanumero").val('');
+							}
 						} else {
 							$("#guia_conductor").val(_id_chofer);
 						}
@@ -2596,7 +2648,7 @@ if (!isset($_SESSION["Id"])) {
 					function(data) {
 						if (data.estado == 1) {
 							// Imprimir Guías
-							url = 'print_primertramo_guiar.php?a=' + data.gr_serie + '&b=' + data.gr_numero;
+							url = 'print_primertramo_guiar.php?a=' + data.gr_serie + '&b=' + data.gr_numero + '&c=' + data.id_remitente + '&d=' + data.id_transportista + '&e=' + data.guias_fecha ;
 							window.open(url, '_blank');
 
 							if (sin_GRT == 0) {

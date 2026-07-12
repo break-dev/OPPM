@@ -10,6 +10,12 @@
 	use Dompdf\Dompdf;
 	use Dompdf\Options;
 
+// ini_set('display_errors', 1);
+// error_reporting(E_ALL);
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
+
 	$serie_guia = $_GET["a"];
 	$numero_guia = $_GET["b"];
 	$id_remitente = $_GET["c"];

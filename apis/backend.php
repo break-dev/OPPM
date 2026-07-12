@@ -2007,7 +2007,7 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 												WHERE DL.Id = " . $arr_idregistros[$l];
 		}
 
-		saveLog(["query" => $q_datos]);
+		// saveLog(["query" => $q_datos]);
 		if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			$idregistro_new = mysqli_insert_id($enlace);
 
@@ -33944,18 +33944,43 @@ switch ($_POST["accion"]) {
 		$total_distribuido_x = 0;
 		$total_ajustado = 0;
 		$total_ajustado_x = 0;
+		$arr_guias = array();
 
-		$q_datos = "SELECT Id,
-													 lote_cod_lote,
-													 lote_num_ticket,
-													 lote_ticket_orden,
-													 lote_peso_neto
-											FROM despachos_primertramo_validaciondatos
-										 WHERE Id IN (" . $arr_distribuciones . ")";
+		$q_datos = "
+		SELECT
+			V.Id,
+			V.lote_cod_lote,
+			V.lote_num_ticket,
+			V.lote_ticket_orden,
+			V.lote_peso_neto,
+			-- guias preliminares
+			lot.serie_guia_remitente,
+			lot.numero_guia_remitente,
+			lot.serie_guia_transportista,
+			lot.numero_guia_transportista
+		FROM despachos_primertramo_validaciondatos V
+		INNER JOIN catalogolotes lot on lot.id_CatalogoLotes = V.lote_id_lote
+		WHERE V.Id IN (" . $arr_distribuciones . ")";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			if (mysqli_num_rows($res_datos) > 0) {
 				while ($row_datos = mysqli_fetch_array($res_datos)) {
+					$guia_remitente_completa = '';
+					if (strlen(trim($row_datos["serie_guia_remitente"])) > 0 && strlen(trim($row_datos["numero_guia_remitente"])) > 0) {
+						$guia_remitente_completa = trim($row_datos["serie_guia_remitente"]) . '-' . trim($row_datos["numero_guia_remitente"]);
+					}
+					$guia_transportista_completa = '';
+					if (strlen(trim($row_datos["serie_guia_transportista"])) > 0 && strlen(trim($row_datos["numero_guia_transportista"])) > 0) {
+						$guia_transportista_completa = trim($row_datos["serie_guia_transportista"]) . '-' . trim($row_datos["numero_guia_transportista"]);
+					}
+
+					$arr_guias[] = array(
+						'serie_remitente' => trim($row_datos["serie_guia_remitente"]),
+						'numero_remitente' => trim($row_datos["numero_guia_remitente"]),
+						'serie_transportista' => trim($row_datos["serie_guia_transportista"]),
+						'numero_transportista' => trim($row_datos["numero_guia_transportista"])
+					);
+
 					$html .= '<tr style="font-size: 14px;">';
 
 					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
@@ -33977,6 +34002,14 @@ switch ($_POST["accion"]) {
 						$html .= ' <b>1</b>';
 					}
 
+					$html .= '  </td>';
+
+					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center; background-color: #ffffff;">';
+					$html .= '    ' . $guia_remitente_completa;
+					$html .= '  </td>';
+
+					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center; background-color: #ffffff;">';
+					$html .= '    ' . $guia_transportista_completa;
 					$html .= '  </td>';
 
 					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center; background-color: #ffffff; font-weight: bold;">';
@@ -34002,7 +34035,7 @@ switch ($_POST["accion"]) {
 
 				// Agregando fila de totales
 				$html .= '<tr style="font-size: 14px;">';
-				$html .= '  <td colspan="3" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: right; background-color: #37393c; color: #ffffff; font-weight: bold;">';
+				$html .= '  <td colspan="5" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: right; background-color: #37393c; color: #ffffff; font-weight: bold;">';
 				$html .= '    TOTAL: ';
 				$html .= '  </td>';
 
@@ -34017,7 +34050,7 @@ switch ($_POST["accion"]) {
 			}
 		}
 
-		echo json_encode(array('estado' => $estado, 'punto_partida' => $punto_partida, 'punto_destino' => $punto_destino, 'destinatario' => $destinatario, 'transportista' => $transportista, 'codigo_mtc_1' => $codigo_mtc_1, 'marca_1' => $marca_1, 'chofer' => $chofer, 'motivo_traslado' => $motivo_traslado, 'codigo_mtc_2' => $codigo_mtc_2, 'marca_2' => $marca_2, 'capacidad' => $capacidad, 'html' => $html));
+		echo json_encode(array('estado' => $estado, 'punto_partida' => $punto_partida, 'punto_destino' => $punto_destino, 'destinatario' => $destinatario, 'transportista' => $transportista, 'codigo_mtc_1' => $codigo_mtc_1, 'marca_1' => $marca_1, 'chofer' => $chofer, 'motivo_traslado' => $motivo_traslado, 'codigo_mtc_2' => $codigo_mtc_2, 'marca_2' => $marca_2, 'capacidad' => $capacidad, 'html' => $html, 'arr_guias' => $arr_guias));
 
 		break;
 
@@ -34110,6 +34143,21 @@ switch ($_POST["accion"]) {
 				$q_update .= " WHERE Id = " . $id_distribucion;
 
 				if ($res_update = mysqli_query($enlace, $q_update)) {
+				}
+
+				// Update catalogolotes
+				$q_update_lote = "UPDATE catalogolotes lot SET ";
+				$q_update_lote .= "  lot.serie_guia_remitente = '" . mb_strtoupper($guia_remitenteserie) . "', ";
+				$q_update_lote .= "  lot.numero_guia_remitente = '" . mb_strtoupper($guia_remitentenumero) . "', ";
+				$q_update_lote .= "  lot.serie_guia_transportista = " . ((strlen($guia_transportistaserie) > 0) ? "'" . mb_strtoupper($guia_transportistaserie) . "'" : "''") . ", ";
+				$q_update_lote .= "  lot.numero_guia_transportista = " . ((strlen($guia_transportistanumero) > 0) ? "'" . mb_strtoupper($guia_transportistanumero) . "'" : "''") . " ";
+				$q_update_lote .= "WHERE lot.id_CatalogoLotes = ( ";
+				$q_update_lote .= "    SELECT des.lote_id_lote ";
+				$q_update_lote .= "    FROM despachos_primertramo_validaciondatos des ";
+				$q_update_lote .= "    WHERE des.Id = " . $id_distribucion . " ";
+				$q_update_lote .= ")";
+
+				if ($res_update_lote = mysqli_query($enlace, $q_update_lote)) {
 				}
 
 				// 2. Código de Ticket Contable
@@ -34207,13 +34255,20 @@ switch ($_POST["accion"]) {
 			$gt_serie = '';
 			$gt_numero = '';
 
-			$q_md5 = "SELECT DISTINCT
-														 MD5(guiaremitente_serie) AS GR_SERIE,
-														 MD5(guiaremitente_numero) AS GR_NUMERO,
-														 MD5(guiatransportista_serie) AS GT_SERIE,
-														 MD5(guiatransportista_numero) AS GT_NUMERO
-												FROM despachos_primertramo_validaciondatos
-											 WHERE Id = " . $id_distribucion;
+			$q_md5 = "
+			SELECT DISTINCT
+				MD5(V.guiaremitente_serie) AS GR_SERIE,
+				MD5(V.guiaremitente_numero) AS GR_NUMERO,
+				MD5(V.guiatransportista_serie) AS GT_SERIE,
+				MD5(V.guiatransportista_numero) AS GT_NUMERO,
+				V.lote_id_proveedorminero AS id_remitente,
+				V.guias_fecha AS guias_fecha,
+				T.id_Transportista AS id_transportista
+			FROM
+				despachos_primertramo_validaciondatos V
+			LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
+			INNER JOIN tb_clientes ET ON T.id_Transportista = ET.Id
+			WHERE V.Id = " . $id_distribucion;
 
 			if ($res_md5 = mysqli_query($enlace, $q_md5)) {
 				if (mysqli_num_rows($res_md5) > 0) {
@@ -34222,6 +34277,9 @@ switch ($_POST["accion"]) {
 						$gr_numero = $row_md5["GR_NUMERO"];
 						$gt_serie = $row_md5["GT_SERIE"];
 						$gt_numero = $row_md5["GT_NUMERO"];
+						$id_remitente = $row_md5["id_remitente"];
+						$guias_fecha = $row_md5["guias_fecha"];
+						$id_transportista = $row_md5["id_transportista"];
 					}
 				}
 			}
@@ -34229,7 +34287,15 @@ switch ($_POST["accion"]) {
 			$estado = 1;
 		}
 
-		echo json_encode(array('estado' => $estado, 'gr_serie' => $gr_serie, 'gr_numero' => $gr_numero, 'gt_serie' => $gt_serie, 'gt_numero' => $gt_numero));
+		echo json_encode(array('estado' => $estado, 
+		'gr_serie' => $gr_serie, 
+		'gr_numero' => $gr_numero, 
+		'gt_serie' => $gt_serie, 
+		'gt_numero' => $gt_numero,
+		'id_remitente'=> $id_remitente, 
+		'id_transportista' => $id_transportista,
+		'guias_fecha' => $guias_fecha,
+	));
 
 		break;
 
