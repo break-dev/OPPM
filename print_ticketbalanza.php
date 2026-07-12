@@ -607,7 +607,7 @@ $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-a
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . substr($pesoinicial_fechahora, 0, 10) . '
+															Fecha: ' . $pesoinicial_fechahora . '
 														</div>
 													</td>
 												</tr>
@@ -625,7 +625,7 @@ $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-a
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . substr($pesofinal_fechahora, 0, 10) . '
+															Fecha: ' . $pesofinal_fechahora . '
 														</div>
 													</td>
 												</tr>

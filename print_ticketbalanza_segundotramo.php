@@ -421,22 +421,34 @@ if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			}
 
 			// Comparación: el menor va arriba (peso_inicial) y el mayor abajo (peso_final)
-			if ($peso_a < $peso_b) {
-				$peso_inicial = $peso_a;
-				$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
-				$peso_final = $peso_b;
-				$pesofinal_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-			} else {
+			if ($peso_a == 0 && $peso_b > 0) {
 				$peso_inicial = $peso_b;
 				$pesoinicial_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-				$peso_final = $peso_a;
-				$pesofinal_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+				$peso_final = 0;
+				$pesofinal_fechahora = '';
+			} else if ($peso_b == 0 && $peso_a > 0) {
+				$peso_inicial = $peso_a;
+				$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+				$peso_final = 0;
+				$pesofinal_fechahora = '';
+			} else {
+				if ($peso_a < $peso_b) {
+					$peso_inicial = $peso_a;
+					$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+					$peso_final = $peso_b;
+					$pesofinal_fechahora = $row_datos["peso_tara_fechahoraregistro"];
+				} else {
+					$peso_inicial = $peso_b;
+					$pesoinicial_fechahora = $row_datos["peso_tara_fechahoraregistro"];
+					$peso_final = $peso_a;
+					$pesofinal_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+				}
 			}
 
 			if (empty($pesoinicial_fechahora)) {
 				$pesoinicial_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
 			}
-			if (empty($pesofinal_fechahora)) {
+			if ($peso_final > 0 && empty($pesofinal_fechahora)) {
 				$pesofinal_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
 			}
 
@@ -672,7 +684,7 @@ $html .= '			<div class="row" style="text-align: center;">
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . substr($pesoinicial_fechahora, 0, 10) . '
+															Fecha: ' . $pesoinicial_fechahora . '
 														</div>
 													</td>
 												</tr>
@@ -683,14 +695,14 @@ $html .= '			<div class="row" style="text-align: center;">
 													</td>
 
 													<td style="width: 50%; text-align: right;">
-														<label>' . number_format($peso_final, 0, '.', ',') . ' Kg</label>
+														<label>' . ($peso_final == 0 ? '---' : number_format($peso_final, 0, '.', ',') . ' Kg') . '</label>
 													</td>
 												</tr>
 
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . substr($pesofinal_fechahora, 0, 10) . '
+															Fecha: ' . (empty($pesofinal_fechahora) ? '---' : $pesofinal_fechahora) . '
 														</div>
 													</td>
 												</tr>

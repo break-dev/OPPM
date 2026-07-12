@@ -1914,6 +1914,7 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 	$idregistro_new = 0;
 
 	while ($l < count($arr_idregistros)) {
+		$skip_insert = false;
         $q_datos = "
         INSERT INTO consolidado_lotes_cierrecontable(
             id_registro,
@@ -1992,7 +1993,7 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
 												WHERE V.Id = " . $arr_idregistros[$l];
 		} else {
-			$q_datos .= "SELECT DISTINCT
+			$q_select_datos = "SELECT DISTINCT
 															DL.Id,
 															PD.cod_lote,
 															/*DL.num_parte,*/
@@ -2007,11 +2008,11 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 																						 WHERE CC_x.cod_lote = PD.cod_lote
 																							 AND CC_x.id_tipoingreso = 2
 																							 AND lote_item <> 1)
-																		ELSE DL.num_parte END END),
+																		ELSE DL.num_parte END END) AS lote_item,
 
-															" . $id_tipoingreso . ",
+															" . $id_tipoingreso . " AS id_tipoingreso,
 															/*DATE(DL.peso_bruto_fechahoraregistro) AS FECHA_INGRESOBALANZA,*/
-															DATE(DL.peso_tara_fechahoraregistro), -- ahora los codigos de los tickets se basaran en la fecha de peso inicial
+															DATE(DL.peso_tara_fechahoraregistro) AS fecha_ingresobalanza, -- ahora los codigos de los tickets se basaran en la fecha de peso inicial
 															DL.guias_placa1 AS PLACA1,
 															DL.guias_placa2 AS PLACA2,
 															CONCAT(DL.guiaremitente_serie, '-', DL.guiaremitente_numero) AS GUIA_REMITENTE,
@@ -2023,10 +2024,10 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															CH.nombres AS CONDUCTOR_NOMBRES,
 															DL.id_tipocarga,
 															DL.num_bigbag,
-															24,
-															NULL,
-															NULL,
-															NULL,
+															24 AS id_zonaorigen,
+															NULL AS proveedorminero_ruc,
+															NULL AS proveedorminero_razonsocial,
+															NULL AS encargadomuestra_nombres,
 															RE.ruc AS REMITENTE_RUC,
 															RE.razon_social AS REMITENTE_RAZONSOCIAL,
 															V.lote_id_producto,
@@ -2034,13 +2035,13 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															DL.observacion,
 															/*DL.peso_bruto_fechahoraregistro,
 															DL.peso_tara_fechahoraregistro,*/
-															DL.guias_fecha,
-															DL.guias_fecha,
+															DL.guias_fecha AS fecha_pesoinicial,
+															DL.guias_fecha AS fecha_pesofinal,
 															DL.peso_bruto,
 															DL.peso_tara,
 															DL.peso_neto,
-															'" . $g_fecha . "',
-															'" . $usuario_registro . "'
+															'" . $g_fecha . "' AS fechahora_registro,
+															'" . $usuario_registro . "' AS fechahora_usuario
 												 FROM despachos_segundotramo_programacion_detalle PD
 															LEFT JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
 															LEFT JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
@@ -2056,97 +2057,143 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															LEFT JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino
 															AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
 												WHERE DL.Id = " . $arr_idregistros[$l];
+
+			// Verificar si ya existe el registro en el consolidado para el segundo tramo
+			$q_exists = "SELECT Id FROM consolidado_lotes_cierrecontable WHERE id_tipoingreso = 2 AND id_registro = " . $arr_idregistros[$l];
+			$res_exists = mysqli_query($enlace, $q_exists);
+			if ($res_exists && mysqli_num_rows($res_exists) > 0) {
+				$row_exists = mysqli_fetch_array($res_exists);
+				$id_existente = $row_exists["Id"];
+
+				$res_select = mysqli_query($enlace, $q_select_datos);
+				if ($res_select && $row = mysqli_fetch_array($res_select)) {
+					$q_update = "UPDATE consolidado_lotes_cierrecontable SET
+									cod_lote = " . ($row[1] !== null ? "'" . mysqli_real_escape_string($enlace, $row[1]) . "'" : 'NULL') . ",
+									lote_item = " . ($row[2] !== null ? $row[2] : 'NULL') . ",
+									fecha_ingresobalanza = " . ($row[4] !== null ? "'" . $row[4] . "'" : 'NULL') . ",
+									placa1 = " . ($row[5] !== null ? "'" . mysqli_real_escape_string($enlace, $row[5]) . "'" : 'NULL') . ",
+									placa2 = " . ($row[6] !== null ? "'" . mysqli_real_escape_string($enlace, $row[6]) . "'" : 'NULL') . ",
+									numguia_remitente = " . ($row[7] !== null ? "'" . mysqli_real_escape_string($enlace, $row[7]) . "'" : 'NULL') . ",
+									numguia_transportista = " . ($row[8] !== null ? "'" . mysqli_real_escape_string($enlace, $row[8]) . "'" : 'NULL') . ",
+									transportista_ruc = " . ($row[9] !== null ? "'" . mysqli_real_escape_string($enlace, $row[9]) . "'" : 'NULL') . ",
+									transportista_razonsocial = " . ($row[10] !== null ? "'" . mysqli_real_escape_string($enlace, $row[10]) . "'" : 'NULL') . ",
+									id_tipovehiculo = " . ($row[11] !== null ? $row[11] : 'NULL') . ",
+									conductor_licencia = " . ($row[12] !== null ? "'" . mysqli_real_escape_string($enlace, $row[12]) . "'" : 'NULL') . ",
+									conductor_nombres = " . ($row[13] !== null ? "'" . mysqli_real_escape_string($enlace, $row[13]) . "'" : 'NULL') . ",
+									id_tipocarga = " . ($row[14] !== null ? $row[14] : 'NULL') . ",
+									num_bigbag = " . ($row[15] !== null ? $row[15] : 'NULL') . ",
+									remitente_ruc = " . ($row[20] !== null ? "'" . mysqli_real_escape_string($enlace, $row[20]) . "'" : 'NULL') . ",
+									remitente_razonsocial = " . ($row[21] !== null ? "'" . mysqli_real_escape_string($enlace, $row[21]) . "'" : 'NULL') . ",
+									id_producto = " . ($row[22] !== null ? $row[22] : 'NULL') . ",
+									id_tipomineral = " . ($row[23] !== null ? $row[23] : 'NULL') . ",
+									observacion = " . ($row[24] !== null ? "'" . mysqli_real_escape_string($enlace, $row[24]) . "'" : 'NULL') . ",
+									fecha_pesoinicial = " . ($row[25] !== null ? "'" . $row[25] . "'" : 'NULL') . ",
+									fecha_pesofinal = " . ($row[26] !== null ? "'" . $row[26] . "'" : 'NULL') . ",
+									peso_bruto = " . ($row[27] !== null ? $row[27] : 'NULL') . ",
+									peso_tara = " . ($row[28] !== null ? $row[28] : 'NULL') . ",
+									peso_neto = " . ($row[29] !== null ? $row[29] : 'NULL') . ",
+									fechahora_registro = '" . $g_fecha . "',
+									fechahora_usuario = '" . $usuario_registro . "'
+								 WHERE Id = " . $id_existente;
+					mysqli_query($enlace, $q_update);
+				}
+				$skip_insert = true;
+			} else {
+				$q_datos .= $q_select_datos;
+			}
 		}
 
-		// saveLog(["query" => $q_datos]);
-		if ($res_datos = mysqli_query($enlace, $q_datos)) {
-			$idregistro_new = mysqli_insert_id($enlace);
+		if (!$skip_insert) {
+			// saveLog(["query" => $q_datos]);
+			if ($res_datos = mysqli_query($enlace, $q_datos)) {
+				$idregistro_new = mysqli_insert_id($enlace);
 
-			// Genera los Número de Ticket del Cierre Contable (Primer y Segundo Tramo)
-			// 1. Obtiene le Fecha del nuevo registro
-			$fecha_x = '';
+				// Genera los Número de Ticket del Cierre Contable (Primer y Segundo Tramo)
+				// 1. Obtiene le Fecha del nuevo registro
+				$fecha_x = '';
 
-			$q_fecha = "SELECT fecha_ingresobalanza
-														FROM consolidado_lotes_cierrecontable
-													 WHERE Id = " . $idregistro_new;
+				$q_fecha = "SELECT fecha_ingresobalanza
+															FROM consolidado_lotes_cierrecontable
+														 WHERE Id = " . $idregistro_new;
 
-			if ($res_fecha = mysqli_query($enlace, $q_fecha)) {
-				if (mysqli_num_rows($res_fecha) > 0) {
-					while ($row_fecha = mysqli_fetch_array($res_fecha)) {
-						$fecha_x = $row_fecha["fecha_ingresobalanza"];
-					}
-				}
-			}
-
-			// 2. Obtiene el N° de Ticket asignado a los registros anteriores
-			$c = 1;
-			$correlativo_x = 0; // Para identificar el Correlativo de cada registro
-			$continuar = 1; // Ayuda a saber cuando continuar
-
-			$q_numticket = "SELECT num_ticketbalanza
-																FROM consolidado_lotes_cierrecontable
-															 WHERE fecha_ingresobalanza = '" . $fecha_x . "'
-																 AND Id <> " . $idregistro_new . "
-															ORDER BY num_ticketbalanza";
-
-			if ($res_numticket = mysqli_query($enlace, $q_numticket)) {
-				if (mysqli_num_rows($res_numticket) > 0) {
-					while ($row_numticket = mysqli_fetch_array($res_numticket)) {
-						// 3. Identifica el Correlativo de cada registro
-
-						$correlativo_x = explode('-', $row_numticket["num_ticketbalanza"])[1];
-						$correlativo_x = intval($correlativo_x);
-
-						// 4. Crea un Array para buscar el Nuevo Correlativo
-						while ($c < 10000) {
-
-							if ($c == $correlativo_x) {
-								$c++;
-
-								break;
-							}
-
-							if ($c != $correlativo_x) {
-								// Setea Prefijo
-								$prefijo = explode('-', $fecha_x);
-								$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
-
-								// Setea Correlativo
-								$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
-
-								// Actualiza Correlativo
-								$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
-								$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
-								$q_update .= " WHERE Id = " . $idregistro_new;
-
-								if ($q_update = mysqli_query($enlace, $q_update)) {
-									$continuar = 0;
-
-									break 2;
-								}
-							}
-
-							$c++;
+				if ($res_fecha = mysqli_query($enlace, $q_fecha)) {
+					if (mysqli_num_rows($res_fecha) > 0) {
+						while ($row_fecha = mysqli_fetch_array($res_fecha)) {
+							$fecha_x = $row_fecha["fecha_ingresobalanza"];
 						}
 					}
 				}
-			}
 
-			// Asigna el Correlativo
-			if ($continuar == 1) {
-				// Setea Prefijo
-				$prefijo = explode('-', $fecha_x);
-				$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
+				// 2. Obtiene el N° de Ticket asignado a los registros anteriores
+				$c = 1;
+				$correlativo_x = 0; // Para identificar el Correlativo de cada registro
+				$continuar = 1; // Ayuda a saber cuando continuar
 
-				// Setea Correlativo
-				$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
+				$q_numticket = "SELECT num_ticketbalanza
+																	FROM consolidado_lotes_cierrecontable
+																 WHERE fecha_ingresobalanza = '" . $fecha_x . "'
+																	 AND Id <> " . $idregistro_new . "
+																ORDER BY num_ticketbalanza";
 
-				// Actualiza Correlativo
-				$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
-				$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
-				$q_update .= " WHERE Id = " . $idregistro_new;
+				if ($res_numticket = mysqli_query($enlace, $q_numticket)) {
+					if (mysqli_num_rows($res_numticket) > 0) {
+						while ($row_numticket = mysqli_fetch_array($res_numticket)) {
+							// 3. Identifica el Correlativo de cada registro
 
-				if ($q_update = mysqli_query($enlace, $q_update)) {
+							$correlativo_x = explode('-', $row_numticket["num_ticketbalanza"])[1];
+							$correlativo_x = intval($correlativo_x);
+
+							// 4. Crea un Array para buscar el Nuevo Correlativo
+							while ($c < 10000) {
+
+								if ($c == $correlativo_x) {
+									$c++;
+
+									break;
+								}
+
+								if ($c != $correlativo_x) {
+									// Setea Prefijo
+									$prefijo = explode('-', $fecha_x);
+									$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
+
+									// Setea Correlativo
+									$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
+
+									// Actualiza Correlativo
+									$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
+									$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
+									$q_update .= " WHERE Id = " . $idregistro_new;
+
+									if ($q_update = mysqli_query($enlace, $q_update)) {
+										$continuar = 0;
+
+										break 2;
+									}
+								}
+
+								$c++;
+							}
+						}
+					}
+				}
+
+				// Asigna el Correlativo
+				if ($continuar == 1) {
+					// Setea Prefijo
+					$prefijo = explode('-', $fecha_x);
+					$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
+
+					// Setea Correlativo
+					$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
+
+					// Actualiza Correlativo
+					$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
+					$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
+					$q_update .= " WHERE Id = " . $idregistro_new;
+
+					if ($q_update = mysqli_query($enlace, $q_update)) {
+					}
 				}
 			}
 		}
