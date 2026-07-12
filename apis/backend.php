@@ -24105,15 +24105,15 @@ switch ($_POST["accion"]) {
 					$html .= '  </td>';
 
 					// Seteo de columnas de Cierre
-					$html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					// $html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
-					if ($row_validacion["is_cerradolote"] == 0) {
-						$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);">';
-					} else {
-						$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ', ' . $row_validacion["Id"] . ')"><u> Reabrir </u></label>';
-					}
+					// if ($row_validacion["is_cerradolote"] == 0) {
+					// 	$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);">';
+					// } else {
+					// 	$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ', ' . $row_validacion["Id"] . ')"><u> Reabrir </u></label>';
+					// }
 
-					$html .= '  </td>';
+					// $html .= '  </td>';
 
 					$html .= '  <td id="td_cierre_2_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
