@@ -3582,7 +3582,8 @@ if (!isset($_SESSION["Id"])) {
 
 						// Imprime Ticket
 						if (_id_object == 3 || _id_object == 4) {
-							window.open('print_ticketdespacho.php?x=' + data.id_md5);
+							// window.open('print_ticketdespacho.php?x=' + data.id_md5);
+							window.open('print_ticketbalanza_segundotramo.php?x=' + data.id_md5);
 						}
 
 						// Cerrar Modal

@@ -454,10 +454,10 @@
 							        				<input id="fil_24" type="text" class="form-control filter col-md-12 col-xs-12" style="text-align: center; font-weight: bold; font-size: 14px; text-transform: uppercase;">
 							        			</th>
 
-							        			<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;">
+							        			<!-- <th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;">
 							        				Sel.<br>
 							        				<input id="th_Chk" class="form-check-input" type="checkbox" style="margin-top: 5px; transform: scale(1.5);" onchange="f_SelectChkCierre();">
-							        			</th>
+							        			</th> -->
 
 							        			<th style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 100px;">
 							        				Fecha Hora

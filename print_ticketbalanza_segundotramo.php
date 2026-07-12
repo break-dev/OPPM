@@ -397,15 +397,6 @@ if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			$guia_remitente = $row_datos["guiaremitente_serie"] . '-' . $row_datos["guiaremitente_numero"];
 			$guia_transportista = $row_datos["guiatransportista_serie"] . '-' . $row_datos["guiatransportista_numero"];
 
-			$peso_inicial = $row_datos["peso_bruto"] * 1000;
-			// $pesoinicial_fechahora = $row_datos["lote_pesoinicial_fechahoraregistro"];
-			// // $pesoinicial_observacion = $row_datos["pesoinicial_observacion"];
-			$pesoinicial_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
-			$peso_final = $row_datos["peso_tara"] * 1000;
-			// $pesofinal_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-			// // $pesofinal_observacion = $row_datos["pesofinal_observacion"];
-			$pesofinal_fechahora = $pesoinicial_fechahora;
-
 			// Obteniendo Peso Neto
 			$peso_neto = $row_datos["peso_neto"] * 1000;
 
@@ -417,15 +408,36 @@ if ($res_datos = mysqli_query($enlace, $q_datos)) {
 				$peso_neto = abs($peso_neto - ($row_datos["COMPLEMENTO_PESODISTRIBUIDO2"] * 1000));
 			}
 
-			// Obteniendo Peso Tara
-			$peso_final = $row_datos["peso_tara"] * 1000;
+			// Calcular pesos para comparar
+			$peso_a = $row_datos["peso_bruto"] * 1000;
+			$peso_b = $row_datos["peso_tara"] * 1000;
 
 			if ($row_datos["TIENE_COMPLEMENTO"] == 1) {
-				$peso_final = ($row_datos["peso_bruto"] * 1000) - $peso_neto;
+				$peso_b = ($row_datos["peso_bruto"] * 1000) - $peso_neto;
 			}
 
 			if ($row_datos["is_complemento"] == 1) {
-				$peso_final = $row_datos["COMPLEMENTO_TARA"];
+				$peso_b = $row_datos["COMPLEMENTO_TARA"];
+			}
+
+			// Comparación: el menor va arriba (peso_inicial) y el mayor abajo (peso_final)
+			if ($peso_a < $peso_b) {
+				$peso_inicial = $peso_a;
+				$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+				$peso_final = $peso_b;
+				$pesofinal_fechahora = $row_datos["peso_tara_fechahoraregistro"];
+			} else {
+				$peso_inicial = $peso_b;
+				$pesoinicial_fechahora = $row_datos["peso_tara_fechahoraregistro"];
+				$peso_final = $peso_a;
+				$pesofinal_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
+			}
+
+			if (empty($pesoinicial_fechahora)) {
+				$pesoinicial_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
+			}
+			if (empty($pesofinal_fechahora)) {
+				$pesofinal_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
 			}
 
 			// Genera el Código QR

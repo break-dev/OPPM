@@ -222,6 +222,22 @@ function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $u
 	return md5($id_despacho_validacion);
 }
 
+function cerrar_lote_desde_segundo_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $usuario_registro)
+{
+    // Grabando cierre
+    $q_update = "UPDATE despachos_segundotramo_distribucion_lotes";
+    $q_update .= "  SET is_cerradolote = 1, ";
+    $q_update .= "			cerradolote_fechahoraregistro = '" . $g_fecha . "', ";
+    $q_update .= "			cerradolote_usuarioregistro = '" . $usuario_registro . "'";
+    $q_update .= " WHERE Id = " . $id_lote_a_cerrar . "";
+
+    mysqli_query($enlace, $q_update);
+
+    // Migrando Lotes cerrados a la tabla de datos Consolidados
+    f_MigrarLotes_CierreContable($enlace, 2, $id_lote_a_cerrar, $g_fecha, $usuario_registro);
+}
+
+
 
 // Permite obtener el nombre de cada mes
 function nombre_meses($num_mes)
@@ -2026,18 +2042,18 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															'" . $g_fecha . "',
 															'" . $usuario_registro . "'
 												 FROM despachos_segundotramo_programacion_detalle PD
-															INNER JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
-															INNER JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
-															INNER JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad
+															LEFT JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
+															LEFT JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
+															LEFT JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad
 															AND PD.cod_lote = DL.cod_lote
-															INNER JOIN transporte UN ON U.id_unidad = UN.id_transporte
+															LEFT JOIN transporte UN ON U.id_unidad = UN.id_transporte
 															LEFT JOIN transporte UN2 ON U.id_unidad2 = UN2.id_transporte
-															INNER JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
-															INNER JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
+															LEFT JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
+															LEFT JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
 															LEFT JOIN tbconfig_modalidadenvio ME ON PD.id_modalidadenvio = ME.Id
-															INNER JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
-															INNER JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
-															INNER JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino
+															LEFT JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
+															LEFT JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
+															LEFT JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino
 															AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
 												WHERE DL.Id = " . $arr_idregistros[$l];
 		}
@@ -29425,7 +29441,7 @@ switch ($_POST["accion"]) {
 			$is_tablalotes = 1;
 		}
 
-		if ($item == 3) {
+		if ($item == 3) { // PESO INICIAL
 			$campo1 = 'peso_tara';
 			$campo2 = 'peso_tara_fechahoraregistro';
 			$campo3 = 'peso_tara_usuarioregistro';
@@ -29567,7 +29583,9 @@ switch ($_POST["accion"]) {
 			}
 		}
 
-		echo json_encode(array('estado' => $estado, 'id_md5' => $id_md5));
+		cerrar_lote_desde_segundo_tramo($enlace, $id_registro, $g_fecha, $usuario_registro);
+
+		echo json_encode(array('estado' => $estado, 'id_md5' => md5($id_registro)));
 
 		break;
 
@@ -40269,15 +40287,15 @@ switch ($_POST["accion"]) {
 					$html .= '  </td>';
 
 					// Seteo de columnas de Cierre
-					$html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; 	vertical-align: middle; text-align: center;">';
+					// $html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; 	vertical-align: middle; text-align: center;">';
 
-					if ($row_datos["is_cerradolote"] == 0) {
-						$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);">';
-					} else {
-						$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ', ' . $row_datos["Id"] . ')"><u> Reabrir </u></label>';
-					}
+					// if ($row_datos["is_cerradolote"] == 0) {
+					// 	$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);">';
+					// } else {
+					// 	$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ', ' . $row_datos["Id"] . ')"><u> Reabrir </u></label>';
+					// }
 
-					$html .= '  </td>';
+					// $html .= '  </td>';
 
 					$html .= '  <td id="td_cierre_2_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
