@@ -1898,7 +1898,42 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 	$idregistro_new = 0;
 
 	while ($l < count($arr_idregistros)) {
-		$q_datos = "INSERT INTO consolidado_lotes_cierrecontable(id_registro, cod_lote, lote_item, id_tipoingreso, fecha_ingresobalanza, placa1, placa2, numguia_remitente, numguia_transportista, transportista_ruc, transportista_razonsocial, id_tipovehiculo, conductor_licencia, conductor_nombres, id_tipocarga, num_bigbag, id_zonaorigen, proveedorminero_ruc, proveedorminero_razonsocial, encargadomuestra_nombres, remitente_ruc, remitente_razonsocial, id_producto, id_tipomineral, observacion, fecha_pesoinicial, fecha_pesofinal, peso_bruto, peso_tara, peso_neto, fechahora_registro, fechahora_usuario) ";
+        $q_datos = "
+        INSERT INTO consolidado_lotes_cierrecontable(
+            id_registro,
+            cod_lote,
+            lote_item,
+            id_tipoingreso,
+            fecha_ingresobalanza,
+            placa1,
+            placa2,
+            numguia_remitente,
+            numguia_transportista,
+            transportista_ruc,
+            transportista_razonsocial,
+            id_tipovehiculo,
+            conductor_licencia,
+            conductor_nombres,
+            id_tipocarga,
+            num_bigbag,
+            id_zonaorigen,
+            proveedorminero_ruc,
+            proveedorminero_razonsocial,
+            encargadomuestra_nombres,
+            remitente_ruc,
+            remitente_razonsocial,
+            id_producto,
+            id_tipomineral,
+            observacion,
+            fecha_pesoinicial,
+            fecha_pesofinal,
+            peso_bruto,
+            peso_tara,
+            peso_neto,
+            fechahora_registro,
+            fechahora_usuario
+        )
+        ";
 
 		if ($id_tipoingreso == 1) {
 			$q_datos .= "SELECT V.Id,
@@ -1960,7 +1995,7 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 
 															" . $id_tipoingreso . ",
 															/*DATE(DL.peso_bruto_fechahoraregistro) AS FECHA_INGRESOBALANZA,*/
-															DL.guias_fecha,
+															DATE(DL.peso_tara_fechahoraregistro), -- ahora los codigos de los tickets se basaran en la fecha de peso inicial
 															DL.guias_placa1 AS PLACA1,
 															DL.guias_placa2 AS PLACA2,
 															CONCAT(DL.guiaremitente_serie, '-', DL.guiaremitente_numero) AS GUIA_REMITENTE,
