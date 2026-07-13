@@ -10,7 +10,9 @@
 
 	use Dompdf\Dompdf;
 	use Dompdf\Options;
-
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 	$id_distribucionunidad = $_GET["x"];
 	// $id_modalidadenvio = $_GET["m"];
 
@@ -200,159 +202,17 @@
 											margin: 0;
 											pading: 0;
 										}
+
+										.page-break{
+											page-break-before: always;
+											break-before: page;
+										}
 									</style>
 								</head>
 
-								<body style="margin-left: 10px; margin-right: 10px;">
-									<div class="row" style="margin-top: 10px; margin-left: 30px; margin-right: 30px;">
-										<table style="width: 100%; border-spacing: -1px;">
-											<tr>
-												<td style="vertical-align: middle; text-align: center; height: 40px;">
-													<div style="font-family: AgencyFBb;">
-														<label style="font-family: AgencyFBb; font-size: 25px;">
-															RCI '.$destino.'
-														</label>
-													</div>
-												</td>
-											</tr>
+<body style="margin-left: 10px; margin-right: 10px;">';
 
-											<tr style="font-size: 20px;">
-												<td style="vertical-align: middle; text-align: center; background-color: #FFFF00;">
-													<label style="font-family: AgencyFBb; font-size: 16px;">
-														REPORTE CONTROL INTERNO SEGÚN GR '.$arr_guias.'
-													</label>
-												</td>
-											</tr>
-										</table>
-									</div>
-
-									<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px;">
-										<table style="width: 100%; border-spacing: -1px;">
-											<tr style="font-size: 14px; font-family: AgencyFBb;">
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													CONDUCTOR:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.mb_strtoupper($conductor_nombres).'
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													LICENCIA DE CONDUCIR:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.$conductor_dni.'
-												</td>
-											</tr>
-
-											<tr style="font-size: 14px; font-family: AgencyFBb;">
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													PLACA:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.$placa_1.((strlen($placa_2) == 0) ? '' : ' / '.$placa_2).'
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													TELÉFONO:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.$inforci_telefono.'
-												</td>
-											</tr>
-
-											<tr style="font-size: 14px; font-family: AgencyFBb;">
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													FECHA SALIDA:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.$inforci_fechasalida.'
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
-													HORA SALIDA:
-												</td>
-
-												<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
-													'.$inforci_horasalida.'
-												</td>
-											</tr>
-										</table>
-									</div>
-
-									<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px;">
-										<table style="width: 100%; border-spacing: -1px;">
-											<tr style="font-size: 14px; font-family: AgencyFBb;">
-												<td colspan="'.(($id_destino == 3) ? '7' : '6').'" style="text-align: center; border: solid; border-width: 1px; background-color: #DBDBDB; vertical-align: middle;">
-													INFORMACIÓN DE DESPACHO
-												</td>
-
-												<td style="width: 50px;">
-													
-												</td>
-
-												<td colspan="3" style="text-align: center; border: solid; border-width: 1px; background-color: #DBDBDB; vertical-align: middle;">
-													INFORMACIÓN DE PLANTA
-												</td>
-											</tr>
-
-											<tr style="font-size: 14px; font-family: AgencyFBb;">';
-
-		if ($id_destino == 3){
-			$html .= '<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 100px;">
-									LOTE COLIBRI
-								</td>';
-		}
-
-		$html .= '					<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													LOTE AUM
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 200px;">
-													RAZÓN SOCIAL
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 80px;">
-													RUC
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 70px;">
-													N° BIG BAG
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													MAT.<br>GRANEL
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 120px;">
-													PESO NETO DE LOTE<br>APROXIMADO (TM)
-												</td>
-
-												<td style="width: 50px;">
-													
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													CODIFICACIÓN<br>LOTE
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													HUMEDAD (%)
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													PESO NETO<br>BALANZA
-												</td>
-											</tr>
-										</thead>
-
-										<tbody>';
-
-	// 2. Arma la estructura de Detalle
+	// 2. Arma la estructura de Detalle (agrupada por proveedor minero)
 		$d = 1;
 		$total_TNE = 0;
 
@@ -360,7 +220,10 @@
 		$cod_lote = '';
 		$num_parte = '';
 
-		$info_lotes = '';
+		// Estructura para acumular filas e info_lotes por proveedor
+		$detalles_por_proveedor = array();
+		$info_lotes_por_proveedor = array();
+		$orden_proveedores = array();
 
 		$q_datos = "SELECT DISTINCT
 											 DL.cod_lote,
@@ -376,6 +239,14 @@
 								       DL.guiaremitente_numero,
 								       DL.guiatransportista_serie,
 								       DL.guiatransportista_numero,
+
+								       CASE WHEN (DL.guias_idmodalidadenvio = 3 OR DL.guias_idmodalidadenvio = 4 OR DL.guias_idmodalidadenvio = 5) AND (PD.id_planta = 3 OR PD.id_planta = 15)
+								       	 THEN UPPER(DL.guias_remitenterazonsocial)
+								       ELSE UPPER((SELECT PM.razon_social
+															 FROM despachos_primertramo_validaciondatos V
+																		INNER JOIN tb_clientes PM ON V.lote_id_proveedorminero = PM.Id
+															WHERE V.lote_cod_lote = DL.cod_lote
+															LIMIT 1)) END AS PROVEEDOR_MINERO_RAZONSOCIAL,
 
 								       CASE WHEN (DL.guias_idmodalidadenvio = 3 OR DL.guias_idmodalidadenvio = 4 OR DL.guias_idmodalidadenvio = 5) AND (PD.id_planta = 3 OR PD.id_planta = 15)
 								       	 THEN CONCAT(DL.guias_remitenteruc, ' - ', DL.guias_remitenterazonsocial)
@@ -400,144 +271,335 @@
 								  		 LEFT JOIN tbconfig_segundotramo_guiasdescripcionbien DB ON DL.guias_iddescripcionbien = DB.Id
 									  	 INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
 								 WHERE MD5(U.Id) = '".$id_distribucionunidad."'
-									 -- AND DL.guias_idmodalidadenvio = ".$id_modalidadenvio."
-								 	 /*AND MD5(DL.guiaremitente_serie) = '".$serie_guia."'
-									 AND MD5(DL.guiaremitente_numero) = '".$numero_guia."'*/
-								ORDER BY DL.cod_lote";
+								ORDER BY PROVEEDOR_MINERO_RAZONSOCIAL, DL.cod_lote";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)){
       if (mysqli_num_rows($res_datos) > 0) {
         while($row_datos = mysqli_fetch_array($res_datos)){
-        	$cod_planta = $row_datos["codigo_planta"];
-					$cod_lote = $row_datos["cod_lote"];
-					$num_parte = $row_datos["num_parte"];
-					$id_tipocarga = $row_datos["id_tipocarga"];
-					$tipo_carga = $row_datos["TIPO_CARGA"];
-					$num_bigbag = $row_datos["num_bigbag"];
-					$guia_remitente = $row_datos["guiaremitente_serie"].' '.$row_datos["guiaremitente_numero"];
-					$guia_transportista = $row_datos["guiatransportista_serie"].' '.$row_datos["guiatransportista_numero"];
-					$proveedor_minero = $row_datos["PROVEEDOR_MINERO"];
-					$pesoneto_ajustado = $row_datos["guias_pesonetoajustado"];
-					$id_planta = $row_datos["id_planta"];
-					$cmh_codigodocumentos = $row_datos["CMH_CODIGODOCUMENTOS"];
-					$cmh_codigoguias = $row_datos["CMH_CODIGOGUIAS"];
-					$total_partes = $row_datos["TOTAL_PARTES"];
+					$id_planta_row = $row_datos["id_planta"];
+					$proveedor_key = trim($row_datos["PROVEEDOR_MINERO"]); // explode(' - ', $proveedor_minero)[1]
+					$proveedor_key = explode(' - ', $proveedor_key)[1];
 
-					if ($id_planta == 15){
-						$cmh_codigodocumentos = $cmh_codigodocumentos.(($total_partes > 1) ? ' ('.$num_parte.'/'.$total_partes.')' : '');
+			if (strlen($proveedor_key) == 0) {
+						$proveedor_key = 'SIN PROVEEDOR';
+					}
 
-						$info_lotes .= $cmh_codigodocumentos.' - '.((strlen($num_bigbag) == 0) ? 'A' : $num_bigbag).' '.$tipo_carga."<br>";
+					$id_planta_row_val = $row_datos["id_planta"];
+					$num_bigbag_row = $row_datos["num_bigbag"];
+					$tipo_carga_row = $row_datos["TIPO_CARGA"];
+					$cod_lote_row = $row_datos["cod_lote"];
+					$num_parte_row = $row_datos["num_parte"];
+					$cmh_codigodocumentos_row = $row_datos["CMH_CODIGODOCUMENTOS"];
+					$total_partes_row = $row_datos["TOTAL_PARTES"];
+
+					if ($id_planta_row == 15){
+						$cmh_codigodocumentos_row = $cmh_codigodocumentos_row.(($total_partes_row > 1) ? ' ('.$num_parte_row.'/'.$total_partes_row.')' : '');
+						$info_lotes_line = $cmh_codigodocumentos_row.' - '.((strlen($num_bigbag_row) == 0) ? 'A' : $num_bigbag_row).' '.$tipo_carga_row;
 					}
 					else{
-						$info_lotes .= $cod_lote.((strlen($num_parte) == 0) ? '' : ' (PARTE '.$num_parte.')').' - '.((strlen($num_bigbag) == 0) ? 'A' : $num_bigbag).' '.$tipo_carga."<br>";
+						$info_lotes_line = $cod_lote_row.((strlen($num_parte_row) == 0) ? '' : ' (PARTE '.$num_parte_row.')').' - '.((strlen($num_bigbag_row) == 0) ? 'A' : $num_bigbag_row).' '.$tipo_carga_row;
 					}
 
-        	$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
+					if (!isset($detalles_por_proveedor[$proveedor_key])) {
+						$detalles_por_proveedor[$proveedor_key] = array();
+						$info_lotes_por_proveedor[$proveedor_key] = '';
+						$orden_proveedores[] = $proveedor_key;
+					}
 
-        	if ($id_destino == 3){
-        		$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-	        	$html .= '							'.((strlen($cod_planta) > 0) ? $cod_planta : '').((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
-	        	$html .= '						</td>';
-        	}
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-
-        	if ($id_planta == 15){
-        		$html .= '							'.$cmh_codigodocumentos;
-        	}
-        	else{
-        		$html .= '							'.$cod_lote.((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
-        	}
-
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.explode(' - ', $proveedor_minero)[1];
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.explode(' - ', $proveedor_minero)[0];
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$num_bigbag;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.((strlen($num_bigbag) == 0) ? 'X' : '');
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.number_format($pesoneto_ajustado, 2, '.', '');
-        	$html .= '						</td>';
-
-        	$html .= '						<td>';
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
-        	$html .= '						</td>';
-					$html .= '					</tr>';
+					$detalles_por_proveedor[$proveedor_key][] = $row_datos;
+					$info_lotes_por_proveedor[$proveedor_key] .= $info_lotes_line."<br>";
 
 					$d ++;
         }
       }
     }
 
-  // Agrega filas adicionales
-    $html .= '				<tr style="font-size: 14px; font-family: AgencyFB;">
-    										<td style="height: 40px;">
-												</td>
-    									</tr>
+		// 3. Fragmentos reutilizables del documento
+		$cabecera_doc = '	<div class="row" style="margin-top: 10px; margin-left: 30px; margin-right: 30px;">
+												<table style="width: 100%; border-spacing: -1px;">
+													<tr>
+														<td style="vertical-align: middle; text-align: center; height: 40px;">
+															<div style="font-family: AgencyFBb;">
+																<label style="font-family: AgencyFBb; font-size: 25px;">
+																	RCI '.$destino.'
+																</label>
+															</div>
+														</td>
+													</tr>
 
-    									<tr style="font-size: 14px; font-family: AgencyFB;">
-    										<td colspan="'.(($id_destino == 3) ? '6' : '5').'" style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													PRECINTO DE SEGURIDAD
-												</td>
+													<tr style="font-size: 20px;">
+														<td style="vertical-align: middle; text-align: center; background-color: #FFFF00;">
+															<label style="font-family: AgencyFBb; font-size: 16px;">
+																REPORTE CONTROL INTERNO SEGÚN GR '.$arr_guias.'
+															</label>
+														</td>
+													</tr>
+												</table>
+											</div>
 
-												<td colspan="5" style="text-align: center; border: solid; border-width: 1px;">
-													'.$inforci_infoprecintos.'
-												</td>
-											</tr>
+											<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px;">
+												<table style="width: 100%; border-spacing: -1px;">
+													<tr style="font-size: 14px; font-family: AgencyFBb;">
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															CONDUCTOR:
+														</td>
 
-											<tr style="font-size: 14px; font-family: AgencyFB;">
-    										<td style="height: 20px;">
-												</td>
-    									</tr>
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.mb_strtoupper($conductor_nombres).'
+														</td>
 
-    									<tr style="font-size: 14px; font-family: AgencyFB;">
-    										<td colspan="'.(($id_destino == 3) ? '6' : '5').'" style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
-													CONFORMIDAD PLANTA
-												</td>
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															LICENCIA DE CONDUCIR:
+														</td>
 
-												<td colspan="5" style="text-align: center; border: solid; border-width: 1px;">
-													
-												</td>
-											</tr>
-  									</tbody>
-									</table>
-								</div>';
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.$conductor_dni.'
+														</td>
+													</tr>
 
-	// Agrega imagen
-		$html .= '			<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px; text-align: center;">';
-		$html .= '				<img src="'.$ruta_images.$img_tipovehiculo.'" style="width: 550px; height: 220"/>';
-		$html .= '			</div>';
+													<tr style="font-size: 14px; font-family: AgencyFBb;">
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															PLACA:
+														</td>
 
-	// Agregando cuadro resumen para imagen
-		$html .= '			<div class="row" style="border: solid; border-width: 1px; vertical-align: middle; text-align: center; margin-left: 420px; margin-right: 420px; background-color: #DEEBF7; margin-top: -250px; font-family: AgencyFBb; font-size: 16px;">';
-		$html .= '				<div class="row">';
-		$html .= '					'.$placa_1.((strlen($placa_2) == 0) ? '' : ' / '.$placa_2);
-		$html .= '				</div>';
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.$placa_1.((strlen($placa_2) == 0) ? '' : ' / '.$placa_2).'
+														</td>
 
-		$html .= '				<div class="row">';
-		$html .= '					'.mb_strtoupper($info_lotes);
-		$html .= '				</div>';
-		$html .= '			</div>';
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															TELÉFONO:
+														</td>
+
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.$inforci_telefono.'
+														</td>
+													</tr>
+
+													<tr style="font-size: 14px; font-family: AgencyFBb;">
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															FECHA SALIDA:
+														</td>
+
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.$inforci_fechasalida.'
+														</td>
+
+														<td style="vertical-align: middle; text-align: center; background-color: #ED7D31; text-align: center; border: solid; border-width: 1px;">
+															HORA SALIDA:
+														</td>
+
+														<td style="vertical-align: middle; text-align: center; text-align: center; border: solid; border-width: 1px;">
+															'.$inforci_horasalida.'
+														</td>
+													</tr>
+												</table>
+											</div>';
+
+		// 4. Renderiza el HTML iterando por proveedor (page-break entre grupos)
+		$total_proveedores = count($orden_proveedores);
+		$colspan_despacho = (($id_destino == 3) ? '7' : '6');
+
+		foreach ($orden_proveedores as $idx_prov => $proveedor_key) {
+			$info_lotes = $info_lotes_por_proveedor[$proveedor_key];
+			$etiqueta_lote = 'LOTE ' . mb_strtoupper($proveedor_key);
+
+			// Page-break entre proveedores (no antes del primero)
+			if ($idx_prov > 0) {
+				$html .= '<div style="page-break-before: always; break-before: page;"></div>';
+			}
+
+			// Cabecera del documento
+			$html .= $cabecera_doc;
+
+			// Apertura de tabla con encabezado dinámico
+			$html .= '	<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px;">
+									<table style="width: 100%; border-spacing: -1px;">
+										<tr style="font-size: 14px; font-family: AgencyFBb;">
+											<td colspan="'.$colspan_despacho.'" style="text-align: center; border: solid; border-width: 1px; background-color: #DBDBDB; vertical-align: middle;">
+												INFORMACIÓN DE DESPACHO
+											</td>
+
+											<td style="width: 50px;">
+
+											</td>
+
+											<td colspan="3" style="text-align: center; border: solid; border-width: 1px; background-color: #DBDBDB; vertical-align: middle;">
+												INFORMACIÓN DE PLANTA
+											</td>
+										</tr>
+
+										<tr style="font-size: 14px; font-family: AgencyFBb;">';
+
+			if ($id_destino == 3){
+				$html .= '					<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 100px;">
+														LOTE COLIBRI
+													</td>';
+			}
+
+			$html .= '						<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														'.$etiqueta_lote.'
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 200px;">
+														RAZÓN SOCIAL
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 80px;">
+														RUC
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 70px;">
+														N° BIG BAG
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														MAT.<br>GRANEL
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle; width: 120px;">
+														PESO NETO DE LOTE<br>APROXIMADO (TM)
+													</td>
+
+													<td style="width: 50px;">
+
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														CODIFICACIÓN<br>LOTE
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														HUMEDAD (%)
+													</td>
+
+													<td style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														PESO NETO<br>BALANZA
+													</td>
+												</tr>
+											</thead>
+
+											<tbody>';
+
+			// Filas del detalle del proveedor actual
+			foreach ($detalles_por_proveedor[$proveedor_key] as $row_datos) {
+				$cod_planta = $row_datos["codigo_planta"];
+				$cod_lote = $row_datos["cod_lote"];
+				$num_parte = $row_datos["num_parte"];
+				$id_tipocarga = $row_datos["id_tipocarga"];
+				$tipo_carga = $row_datos["TIPO_CARGA"];
+				$num_bigbag = $row_datos["num_bigbag"];
+				$guia_remitente = $row_datos["guiaremitente_serie"].' '.$row_datos["guiaremitente_numero"];
+				$guia_transportista = $row_datos["guiatransportista_serie"].' '.$row_datos["guiatransportista_numero"];
+				$proveedor_minero = $row_datos["PROVEEDOR_MINERO"];
+				$pesoneto_ajustado = $row_datos["guias_pesonetoajustado"];
+				$id_planta = $row_datos["id_planta"];
+				$cmh_codigodocumentos = $row_datos["CMH_CODIGODOCUMENTOS"];
+				$cmh_codigoguias = $row_datos["CMH_CODIGOGUIAS"];
+				$total_partes = $row_datos["TOTAL_PARTES"];
+
+				$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
+
+				if ($id_destino == 3){
+					$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+					$html .= '							'.((strlen($cod_planta) > 0) ? $cod_planta : '').((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
+					$html .= '						</td>';
+				}
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+
+				if ($id_planta == 15){
+					$html .= '							'.$cmh_codigodocumentos;
+				}
+				else{
+					$html .= '							'.$cod_lote.((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
+				}
+
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '							'.explode(' - ', $proveedor_minero)[1];
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '							'.explode(' - ', $proveedor_minero)[0];
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$num_bigbag;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '							'.((strlen($num_bigbag) == 0) ? 'X' : '');
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '							'.number_format($pesoneto_ajustado, 2, '.', '');
+				$html .= '						</td>';
+
+				$html .= '						<td>';
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; vertical-align: middle; text-align: center;">';
+				$html .= '						</td>';
+				$html .= '					</tr>';
+			}
+
+			// Filas adicionales (precintos, conformidad) por proveedor
+			$colspan_final = (($id_destino == 3) ? '6' : '5');
+			$html .= '				<tr style="font-size: 14px; font-family: AgencyFB;">
+													<td style="height: 40px;">
+													</td>
+												</tr>
+
+												<tr style="font-size: 14px; font-family: AgencyFB;">
+													<td colspan="'.$colspan_final.'" style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														PRECINTO DE SEGURIDAD
+													</td>
+
+													<td colspan="5" style="text-align: center; border: solid; border-width: 1px;">
+														'.$inforci_infoprecintos.'
+													</td>
+												</tr>
+
+												<tr style="font-size: 14px; font-family: AgencyFB;">
+													<td style="height: 20px;">
+													</td>
+												</tr>
+
+												<tr style="font-size: 14px; font-family: AgencyFB;">
+													<td colspan="'.$colspan_final.'" style="text-align: center; border: solid; border-width: 1px; background-color: #00B0F0; vertical-align: middle;">
+														CONFORMIDAD PLANTA
+													</td>
+
+													<td colspan="5" style="text-align: center; border: solid; border-width: 1px;">
+
+													</td>
+												</tr>
+											</tbody>
+										</table>
+									</div>';
+
+			// Imagen del vehículo y cuadro resumen por proveedor
+			$html .= '			<div class="row" style="margin-top: 20px; margin-left: 30px; margin-right: 30px; text-align: center;">';
+			$html .= '				<img src="'.$ruta_images.$img_tipovehiculo.'" style="width: 550px; height: 220"/>';
+			$html .= '			</div>';
+
+			$html .= '			<div class="row" style="border: solid; border-width: 1px; vertical-align: middle; text-align: center; margin-left: 420px; margin-right: 420px; background-color: #DEEBF7; margin-top: -250px; font-family: AgencyFBb; font-size: 16px;">';
+			$html .= '				<div class="row">';
+			$html .= '					'.$placa_1.((strlen($placa_2) == 0) ? '' : ' / '.$placa_2);
+			$html .= '				</div>';
+
+			$html .= '				<div class="row">';
+			$html .= '					'.mb_strtoupper($info_lotes);
+			$html .= '				</div>';
+			$html .= '			</div>';
+		}
 
 	// Cierra html
     $html .= '	</body>

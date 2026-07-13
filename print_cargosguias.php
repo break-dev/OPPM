@@ -10,7 +10,9 @@
 
 	use Dompdf\Dompdf;
 	use Dompdf\Options;
-
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 	$id_distribucionunidad = $_GET["x"];
 	$id_modalidadenvio= $_GET["m"];
 
@@ -220,95 +222,27 @@
 											margin: 0;
 											pading: 0;
 										}
+
+										.page-break{
+											page-break-before: always;
+											break-before: page;
+										}
 									</style>
 								</head>
 
-								<body style="margin-left: 10px; margin-right: 10px;">
-									<div class="row">
-										<table style="width: 100%;">
-											<tr style="font-size: 14px;">
-												<td style="text-align: left; vertical-align: top; max-width: 10%;">
-													<div style="font-family: AgencyFB; font-size: 16px;">
-														'.$remitente_razonsocial.'
-													</div>
-												</td>
-											</tr>
-										</table>
-									</div>
+								<body style="margin-left: 10px; margin-right: 10px;">';
 
-									<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
-										<table style="width: 100%;">
-											<tr style="font-size: 16px;">
-												<td style="vertical-align: middle; text-align: center; height: 60px;">
-													<div style="font-family: AgencyFBb;">
-														<label style="font-family: AgencyFBb;">
-															CONSTANCIA DE ENTREGA DE DOCUMENTOS
-														</label>
-													</div>
-												</td>
-											</tr>
-
-											<tr style="font-size: 16px;">
-												<td style="vertical-align: middle; text-align: justify;">
-													<label style="font-family: AgencyFB;">
-														Hoy, '.formatearFecha($fecha_guia).' se hace constar la entrega al Sr(a): _______________________________________________________<br>con DNI: ____________________ ; la documentación que se especifica a continuación:
-													</label>
-												</td>
-											</tr>
-										</table>
-									</div>
-
-									<div class="row" style="margin-top: 20px;">
-										<table style="width: 100%; border-spacing: -1px;">
-											<tr style="font-size: 15px; font-family: AgencyFBb;">
-												<td colspan="'.(($id_destino == 3) ? '5' : '4').'" style="text-align: center; border: solid; border-width: 1px; border-color: #D9D9D9; background-color: #D9D9D9; vertical-align: middle;">
-													TRAZABILIDAD DE LOTES
-												</td>
-											</tr>
-
-											<tr style="font-size: 15px; font-family: AgencyFBb;">
-												<td colspan= "'.(($id_destino == 3) ? '3' : '2').'">
-												</td>
-
-												<td colspan="2" style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
-													SEGUNDO TRAMO
-												</td>
-											</tr>
-
-											<tr style="font-size: 15px; font-family: AgencyFBb;">
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
-													LOTE AUM
-												</td>';
-
-												if ($id_destino == 3){
-													$html .= '<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
-																			LOTE COLIBRI
-																		</td>';
-												}
-
-		$html .= '					<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle; width: 350px;">
-													PROVEEDOR
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
-													GRR (destinatario, SUNAT)
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
-													GRT (destinatario, SUNAT)
-												</td>
-											</tr>
-										</thead>
-
-										<tbody>';
-
-	// 2. Arma la estructura de Detalle
+	// 2. Arma la estructura de Detalle (agrupada por proveedor minero)
 		$d = 1;
 		$total_TNE = 0;
 
 		$cod_planta = '';
 		$cod_lote = '';
 		$num_parte = '';
+
+		// Estructura para acumular filas agrupadas por proveedor
+		$detalles_por_proveedor = array();
+		$orden_proveedores = array();
 
 		$q_datos = "SELECT DISTINCT
 											 DL.cod_lote,
@@ -326,16 +260,22 @@
 								       DL.guiatransportista_numero,
 								       DL.guias_idmodalidadenvio,
 
-								       (SELECT DISTINCT CONCAT(PM.documento, ' - ', PM.razon_social)
-													FROM despachos_primertramo_validaciondatos V
-															 INNER JOIN tb_clientes PM ON V.lote_id_proveedorminero = PM.Id
-												 WHERE V.lote_cod_lote = DL.cod_lote) AS PROVEEDOR_MINERO,
+								       CASE WHEN (DL.guias_idmodalidadenvio = 3 OR DL.guias_idmodalidadenvio = 4 OR DL.guias_idmodalidadenvio = 5) AND (P.id_planta = 3 OR P.id_planta = 15)
+								       	 THEN UPPER(DL.guias_remitenterazonsocial)
+								       ELSE UPPER((SELECT PM.razon_social
+															 FROM despachos_primertramo_validaciondatos V
+																		INNER JOIN tb_clientes PM ON V.lote_id_proveedorminero = PM.Id
+															WHERE V.lote_cod_lote = DL.cod_lote
+															LIMIT 1)) END AS PROVEEDOR_MINERO,
 
 							      	 (SELECT CONCAT (ruc, ' - ', razon_social)
 													FROM tbconfig_remitentessegundotramo
 												 WHERE id_destino = DL.guias_iddestino
 													 AND id_modalidadenvio = DL.guias_idmodalidadenvio) AS REMITENTE_RAZONSOCIAL,
-
+							      	 (SELECT CONCAT (razon_social)
+													FROM tbconfig_remitentessegundotramo
+												 WHERE id_destino = DL.guias_iddestino
+													 AND id_modalidadenvio = DL.guias_idmodalidadenvio) AS REMITENTE_SOLO,
 											 P.id_planta,
 											 IFNULL(PD.cmh_codigodocumentos, '') AS CMH_CODIGODOCUMENTOS,
 											 IFNULL(PD.cmh_codigoguias, '') AS CMH_CODIGOGUIAS,
@@ -353,98 +293,221 @@
 									  	 INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
 								 WHERE MD5(U.Id) = '".$id_distribucionunidad."'
 								 	 AND DL.guias_idmodalidadenvio = ".$id_modalidadenvio."
-								 	 /*AND MD5(DL.guiaremitente_serie) = '".$serie_guia."'
-									 AND MD5(DL.guiaremitente_numero) = '".$numero_guia."'*/
-								ORDER BY DL.cod_lote";
+								ORDER BY PROVEEDOR_MINERO, DL.cod_lote";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)){
       if (mysqli_num_rows($res_datos) > 0) {
         while($row_datos = mysqli_fetch_array($res_datos)){
-        	$cod_planta = $row_datos["codigo_planta"];
-					$cod_lote = $row_datos["cod_lote"];
-					$num_parte = $row_datos["num_parte"];
-					$id_tipocarga = $row_datos["id_tipocarga"];
-					$tipo_carga = $row_datos["TIPO_CARGA"];
-					$num_bigbag = $row_datos["num_bigbag"];
-					$guia_remitente = $row_datos["guiaremitente_serie"].'-'.$row_datos["guiaremitente_numero"];
-					$guia_transportista = $row_datos["guiatransportista_serie"].'-'.$row_datos["guiatransportista_numero"];
-					// $id_modalidadenvio = $row_datos["guias_idmodalidadenvio"];
-					$proveedor_minero = ((($id_destino == 3 || $id_destino == 15) && ($id_modalidadenvio == 3 || $id_modalidadenvio == 4 || $id_modalidadenvio == 5)) ? $row_datos["REMITENTE_RAZONSOCIAL"] : $row_datos["PROVEEDOR_MINERO"]);
 					$id_planta = $row_datos["id_planta"];
-					$cmh_codigodocumentos = $row_datos["CMH_CODIGODOCUMENTOS"];
-					$cmh_codigoguias = $row_datos["CMH_CODIGOGUIAS"];
-					$total_partes = $row_datos["TOTAL_PARTES"];
+					$id_modalidadenvio = $row_datos["guias_idmodalidadenvio"];
 
-					if ($id_planta == 15){
-						$cmh_codigodocumentos = $cmh_codigodocumentos.(($total_partes > 1) ? ' ('.$num_parte.'/'.$total_partes.')' : '');
+					// Determina el proveedor minero (mismo criterio que print_rci.php)
+					if (($id_planta == 3 || $id_planta == 15) && ($id_modalidadenvio == 3 || $id_modalidadenvio == 4 || $id_modalidadenvio == 5)) {
+						$proveedor_key = trim($row_datos["REMITENTE_SOLO"]);
+					} else {
+						$proveedor_key = trim($row_datos["PROVEEDOR_MINERO"]);
 					}
 
-        	$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					if (strlen($proveedor_key) == 0) {
+						$proveedor_key = 'SIN PROVEEDOR';
+					}
 
-        	if ($id_planta == 15){
-        		$html .= '							'.$cmh_codigodocumentos;
-        	}
-        	else{
-        		$html .= '							'.$cod_lote.((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
-        	}
+					if (!isset($detalles_por_proveedor[$proveedor_key])) {
+						$detalles_por_proveedor[$proveedor_key] = array();
+						$orden_proveedores[] = $proveedor_key;
+					}
 
-        	$html .= '						</td>';
-
-        	if ($id_destino == 3){
-        		$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-	        	$html .= '							'.((strlen($cod_planta) > 0) ? $cod_planta : '').((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
-	        	$html .= '						</td>';
-        	}
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$proveedor_minero;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$guia_remitente;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$guia_transportista;
-        	$html .= '						</td>';
-					$html .= '					</tr>';
+					$detalles_por_proveedor[$proveedor_key][] = $row_datos;
 
 					$d ++;
         }
       }
     }
 
-		$html .= '					</tbody>
+		// 3. Renderiza el HTML iterando por proveedor (page-break entre grupos)
+		$total_proveedores = count($orden_proveedores);
+
+		// Fragmentos reutilizables (cabecera y pie del documento)
+		$cabecera_doc = '	<div class="row">
+												<table style="width: 100%;">
+													<tr style="font-size: 14px;">
+														<td style="text-align: left; vertical-align: top; max-width: 10%;">
+															<div style="font-family: AgencyFB; font-size: 16px;">
+																'.$remitente_razonsocial.'
+															</div>
+														</td>
+													</tr>
+												</table>
+											</div>
+
+											<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+												<table style="width: 100%;">
+													<tr style="font-size: 16px;">
+														<td style="vertical-align: middle; text-align: center; height: 60px;">
+															<div style="font-family: AgencyFBb;">
+																<label style="font-family: AgencyFBb;">
+																	CONSTANCIA DE ENTREGA DE DOCUMENTOS
+																</label>
+															</div>
+														</td>
+													</tr>
+
+													<tr style="font-size: 16px;">
+														<td style="vertical-align: middle; text-align: justify;">
+															<label style="font-family: AgencyFB;">
+																Hoy, '.formatearFecha($fecha_guia).' se hace constar la entrega al Sr(a): _______________________________________________________<br>con DNI: ____________________ ; la documentación que se especifica a continuación:
+															</label>
+														</td>
+													</tr>
+												</table>
+											</div>';
+
+		$pie_pagina = '	<div class="row" style="margin-top: 50px; margin-left: 150px;">
+											<table style="width: 100%;">
+												<tr style="font-size: 14px; font-family: AgencyFB;">
+													<td style="vertical-align: top;">
+														Para mayor constancia de lo recepcionado firmo la presente en señal de conformidad.
+													</td>
+												</tr>
+											</table>
+										</div>
+
+										<div class="row" style="margin-top: 30px; margin-left: 150px;">
+											<table style="width: 100%;">
+												<tr style="font-size: 14px;">
+													<td style="vertical-align: top; font-family: AgencyFB; height: 30px;">
+														FIRMA: ___________________________________
+													</td>
+												</tr>
+
+												<tr style="font-size: 14px;">
+													<td style="vertical-align: top; font-family: AgencyFB;">
+														HORA: ____________________________________
+													</td>
+												</tr>
+											</table>
+										</div>';
+
+		foreach ($orden_proveedores as $idx_prov => $proveedor_key) {
+			// Page-break entre proveedores (no antes del primero)
+			if ($idx_prov > 0) {
+				$html .= '<div style="page-break-before: always; break-before: page;"></div>';
+			}
+
+			// Cabecera del documento en cada página
+			$html .= $cabecera_doc;
+
+			// Etiqueta dinámica del encabezado LOTE <PROVEEDOR>
+			$etiqueta_lote = 'LOTE ' . mb_strtoupper($proveedor_key);
+
+			// Apertura de la tabla con sus encabezados
+			$colspan_cab = (($id_destino == 3) ? '5' : '4');
+			$colspan_2do = (($id_destino == 3) ? '3' : '2');
+
+			$html .= '	<div class="row" style="margin-top: 20px;">
+									<table style="width: 100%; border-spacing: -1px;">
+										<tr style="font-size: 15px; font-family: AgencyFBb;">
+											<td colspan="'.$colspan_cab.'" style="text-align: center; border: solid; border-width: 1px; border-color: #D9D9D9; background-color: #D9D9D9; vertical-align: middle;">
+												TRAZABILIDAD DE LOTES
+											</td>
+										</tr>
+
+										<tr style="font-size: 15px; font-family: AgencyFBb;">
+											<td colspan="'.$colspan_2do.'">
+											</td>
+
+											<td colspan="2" style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
+												SEGUNDO TRAMO
+											</td>
+										</tr>
+
+										<tr style="font-size: 15px; font-family: AgencyFBb;">
+											<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
+												'.$etiqueta_lote.'
+											</td>';
+
+			if ($id_destino == 3) {
+				$html .= '				<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
+														LOTE COLIBRI
+													</td>';
+			}
+
+			$html .= '					<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle; width: 350px;">
+													PROVEEDOR
+												</td>
+
+												<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
+													GRR (destinatario, SUNAT)
+												</td>
+
+												<td style="text-align: center; border: solid; border-width: 1px; background-color: #D9D9D9; vertical-align: middle;">
+													GRT (destinatario, SUNAT)
+												</td>
+											</tr>
+										</thead>
+
+										<tbody>';
+
+			// Filas del detalle del proveedor actual
+			foreach ($detalles_por_proveedor[$proveedor_key] as $row_datos) {
+				$cod_planta = $row_datos["codigo_planta"];
+				$cod_lote = $row_datos["cod_lote"];
+				$num_parte = $row_datos["num_parte"];
+				$id_tipocarga = $row_datos["id_tipocarga"];
+				$tipo_carga = $row_datos["TIPO_CARGA"];
+				$num_bigbag = $row_datos["num_bigbag"];
+				$guia_remitente = $row_datos["guiaremitente_serie"].'-'.$row_datos["guiaremitente_numero"];
+				$guia_transportista = $row_datos["guiatransportista_serie"].'-'.$row_datos["guiatransportista_numero"];
+				$proveedor_minero = ((($id_destino == 3 || $id_destino == 15) && ($id_modalidadenvio == 3 || $id_modalidadenvio == 4 || $id_modalidadenvio == 5)) ? $row_datos["REMITENTE_RAZONSOCIAL"] : $row_datos["PROVEEDOR_MINERO"]);
+				$id_planta = $row_datos["id_planta"];
+				$cmh_codigodocumentos = $row_datos["CMH_CODIGODOCUMENTOS"];
+				$cmh_codigoguias = $row_datos["CMH_CODIGOGUIAS"];
+				$total_partes = $row_datos["TOTAL_PARTES"];
+
+				if ($id_planta == 15){
+					$cmh_codigodocumentos = $cmh_codigodocumentos.(($total_partes > 1) ? ' ('.$num_parte.'/'.$total_partes.')' : '');
+				}
+
+				$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+
+				if ($id_planta == 15){
+					$html .= '							'.$cmh_codigodocumentos;
+				}
+				else{
+					$html .= '							'.$cod_lote.((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
+				}
+
+				$html .= '						</td>';
+
+				if ($id_destino == 3){
+					$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					$html .= '							'.((strlen($cod_planta) > 0) ? $cod_planta : '').((strlen($num_parte) > 0) ? '<br>PARTE '.$num_parte : '');
+					$html .= '						</td>';
+				}
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$proveedor_minero;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$guia_remitente;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$guia_transportista;
+				$html .= '						</td>';
+				$html .= '					</tr>';
+			}
+
+			// Cierre de tabla
+			$html .= '					</tbody>
 										</table>
 									</div>';
 
-	// 3. Completnado pie de página
-		$html .= '<div class="row" style="margin-top: 50px; margin-left: 150px;">
-								<table style="width: 100%;">
-									<tr style="font-size: 14px; font-family: AgencyFB;">
-										<td style="vertical-align: top;">
-											Para mayor constancia de lo recepcionado firmo la presente en señal de conformidad.
-										</td>
-									</tr>
-								</table>
-							</div>';
-
-		$html .= '<div class="row" style="margin-top: 30px; margin-left: 150px;">
-								<table style="width: 100%;">
-									<tr style="font-size: 14px;">
-										<td style="vertical-align: top; font-family: AgencyFB; height: 30px;">
-											FIRMA: ___________________________________
-										</td>
-									</tr>
-
-									<tr style="font-size: 14px;">
-										<td style="vertical-align: top; font-family: AgencyFB;">
-											HORA: ____________________________________
-										</td>
-									</tr>
-								</table>
-							</div>';
+			// Pie de página en cada proveedor
+			$html .= $pie_pagina;
+		}
 
 	// Cierra html
     $html .= '	</body>

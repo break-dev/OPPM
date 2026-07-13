@@ -10,7 +10,9 @@ require_once 'dompdf/autoload.inc.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
-
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 $id_distribucionunidad = $_GET["x"];
 $remitente_ruc = $_GET["r"];
 $remitente_razonsocial = $_GET["u"];

@@ -10,7 +10,9 @@
 
 	use Dompdf\Dompdf;
 	use Dompdf\Options;
-
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('display_startuo_errors', 0);
 	$id_programacion = $_GET["x"];
 
 	// Funciones
@@ -149,78 +151,23 @@
 											margin: 0;
 											pading: 0;
 										}
+
+										.page-break{
+											page-break-before: always;
+											break-before: page;
+										}
 									</style>
 								</head>
 
-								<body style="margin-left: 10px; margin-right: 10px;">
-									<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
-										<table style="width: 100%;">
-											<tr style="font-size: 20px;">
-												<td style="vertical-align: middle; text-align: center; height: 60px;">
-													<div style="font-family: AgencyFBb;">
-														<label style="font-family: AgencyFBb;">
-															DISTRIBUCIÓN DE DESPACHO ('.$correlativo_despacho.')
-														</label>
-													</div>
-												</td>
-											</tr>
-										</table>
-									</div>
+								<body style="margin-left: 10px; margin-right: 10px;">';
 
-									<div class="row" style="margin-top: 20px;">
-										<table style="width: 100%; border-spacing: -1px;">
-											<tr style="font-size: 16px; font-family: AgencyFBb;">
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													LOTE COLIBRI
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													LOTE AUM
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													PLACA
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													PESO
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													PRESENTACIÓN
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													PROVEEDOR
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													RUC
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													GRR
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													GRT
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													N° CARRO
-												</td>
-
-												<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
-													N° GUIAS
-												</td>
-											</tr>
-										</thead>
-
-										<tbody>';
-
-	// 2. Arma la estructura de Detalle
+	// 2. Arma la estructura de Detalle (agrupada por proveedor minero)
 		$x = 1;
 		$id_distribucionunidad = 0;
+
+		// Estructura para acumular filas por proveedor
+		$detalles_por_proveedor = array();
+		$orden_proveedores = array();
 
 		$q_datos = "SELECT DISTINCT DU.Id AS ID_DISTRIBUCIONUNIDAD,
 											 PD.codigo_planta,
@@ -315,131 +262,215 @@
 							        LEFT JOIN tbconfig_encargadosmuestra EM ON VD.lote_id_encargadomuestra = EM.Id
 							        INNER JOIN correlativo_despacho CD ON P.Id = CD.id_programacion
 							        INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
-	          WHERE MD5(DU.id_programacion) = '".$id_programacion."'
-					 ORDER BY DU.Id, DL.cod_lote";
+WHERE MD5(DU.id_programacion) = '".$id_programacion."'
+					 ORDER BY PROVEEDORMINERO_RAZONSOCIAL, DU.Id, DL.cod_lote";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)){
       if (mysqli_num_rows($res_datos) > 0) {
         while($row_datos = mysqli_fetch_array($res_datos)){
-        	$codigo_planta = $row_datos["codigo_planta"];
-					$num_parte = $row_datos["num_parte"];
-					$cod_lote = $row_datos["cod_lote"];
-					$placa1 = $row_datos["cplaca"].((strlen($row_datos["PLACA2"]) == 0) ? '' : ' / '.$row_datos["PLACA2"]);
-					$peso_neto = $row_datos["PESO_NETO"];
-					$num_bigbag = $row_datos["num_bigbag"];
-					$tipo_carga = ((strlen($num_bigbag) > 0) ? $num_bigbag.' ' : '').$row_datos["TIPO_CARGA"];
-					$proveedorminero_ruc = $row_datos["PROVEEDORMINERO_RUC"];
-					$proveedorminero_razonsocial = $row_datos["PROVEEDORMINERO_RAZONSOCIAL"];
-					$guia_remitente = $row_datos["guiaremitente_serie"].' '.$row_datos["guiaremitente_numero"];
-					$guia_transportista = $row_datos["guiatransportista_serie"].' '.$row_datos["guiatransportista_numero"];
-					$proveedorminero_ruc = $row_datos["PROVEEDORMINERO_RUC"];
-					$id_modalidadenvio = $row_datos["guias_idmodalidadenvio"];
-					$total_guias = $row_datos["TOTAL_GUIAS"].' GRR / '.$row_datos["TOTAL_GUIAS"].' GRT';
+					$proveedor_key = trim($row_datos["PROVEEDORMINERO_RAZONSOCIAL"]);
+					if (strlen($proveedor_key) == 0) {
+						$proveedor_key = 'SIN PROVEEDOR';
+					}
 
-        	$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$codigo_planta.((strlen($num_parte) == 0) ? '' : "<br>PARTE ".$num_parte);
-        	$html .= '						</td>';
+					if (!isset($detalles_por_proveedor[$proveedor_key])) {
+						$detalles_por_proveedor[$proveedor_key] = array();
+						$orden_proveedores[] = $proveedor_key;
+					}
 
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$cod_lote.((strlen($num_parte) == 0) ? '' : "<br>PARTE ".$num_parte);
-        	$html .= '						</td>';
-
-        	if ($id_distribucionunidad != $row_datos["ID_DISTRIBUCIONUNIDAD"]){
-        		$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-	        	$html .= '							'.$placa1;
-	        	$html .= '						</td>';
-
-	        	// Obteniendo total de guías
-							$total_guias = 0;
-
-							if ($id_modalidadenvio == 1 || $id_modalidadenvio == 2){
-								$q_totalguias = "SELECT COUNT(DISTINCT VD.lote_id_proveedorminero) AS TOTAL_GUIAS
-																   FROM despachos_segundotramo_distribucion_lotes DL
-																   			LEFT JOIN despachos_primertramo_validaciondatos VD ON DL.cod_lote = VD.lote_cod_lote
-																  WHERE id_distribucionunidad = ".$row_datos["ID_DISTRIBUCIONUNIDAD"];
-							}
-							else{
-								$q_totalguias = "SELECT COUNT(DISTINCT guias_idmodalidadenvio) AS TOTAL_GUIAS
-																   FROM despachos_segundotramo_distribucion_lotes
-																  WHERE id_distribucionunidad = ".$row_datos["ID_DISTRIBUCIONUNIDAD"];
-							}
-
-							if ($res_totalguias = mysqli_query($enlace, $q_totalguias)){
-					      if (mysqli_num_rows($res_totalguias) > 0) {
-					        while($row_totalguias = mysqli_fetch_array($res_totalguias)){
-					        	$total_guias = $row_totalguias["TOTAL_GUIAS"];
-					        }
-					      }
-					    }
-        	}
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.number_format($peso_neto, 2, '.', '');
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$tipo_carga;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$proveedorminero_razonsocial;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$proveedorminero_ruc;
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.((strlen(trim($guia_remitente)) > 0) ? $guia_remitente : '<i style="font-size: 12px; color: #F23030;">Pendiente</i>');
-        	$html .= '						</td>';
-
-        	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.((strlen(trim($guia_transportista)) > 0) ? $guia_transportista : '<i style="font-size: 12px; color: #F23030;">Pendiente</i>');
-        	$html .= '						</td>';
-
-        	if ($id_distribucionunidad != $row_datos["ID_DISTRIBUCIONUNIDAD"]){
-        		$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-	        	$html .= '							UNIDAD '.$x;
-	        	$html .= '						</td>';
-
-        	$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	$html .= '							'.$total_guias;
-        	$html .= '						</td>';
-
-	        	$x ++;
-        	}
-
-
-        	$id_distribucionunidad = $row_datos["ID_DISTRIBUCIONUNIDAD"];
-
-        	// if ($id_destino == 3){
-        	// 	$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-	        // 	$html .= '							'.((strlen($cod_planta) > 0) ? $cod_planta : '').((strlen($num_parte) > 0) ? ' PARTE '.$num_parte : '');
-	        // 	$html .= '						</td>';
-        	// }
-
-        	// $html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	// $html .= '							'.$proveedor_minero;
-        	// $html .= '						</td>';
-
-        	// $html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	// $html .= '							'.$guia_remitente;
-        	// $html .= '						</td>';
-
-        	// $html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-        	// $html .= '							'.$guia_transportista;
-        	// $html .= '						</td>';
-					$html .= '					</tr>';
+					$detalles_por_proveedor[$proveedor_key][] = $row_datos;
 
 					$d ++;
         }
       }
     }
 
-		$html .= '					</tbody>
-										</table>
-									</div>';
+		// 3. Renderiza el HTML iterando por proveedor (page-break entre grupos)
+		$cabecera_doc = '	<div class="row" style="margin-top: 20px; margin-left: 50px; margin-right: 50px;">
+												<table style="width: 100%;">
+													<tr style="font-size: 20px;">
+														<td style="vertical-align: middle; text-align: center; height: 60px;">
+															<div style="font-family: AgencyFBb;">
+																<label style="font-family: AgencyFBb;">
+																	DISTRIBUCIÓN DE DESPACHO ('.$correlativo_despacho.')
+																</label>
+															</div>
+														</td>
+													</tr>
+												</table>
+											</div>';
+
+		$encabezado_tabla_html = '	<div class="row" style="margin-top: 20px;">
+																<table style="width: 100%; border-spacing: -1px;">
+																	<tr style="font-size: 16px; font-family: AgencyFBb;">
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			LOTE COLIBRI
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			__ETIQUETA_LOTE__
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			PLACA
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			PESO
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			PRESENTACIÓN
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			PROVEEDOR
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			RUC
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			GRR
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			GRT
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			N° CARRO
+																		</td>
+
+																		<td style="text-align: center; border: solid; border-width: 1px; background-color: #FFC000; vertical-align: middle;">
+																			N° GUIAS
+																		</td>
+																	</tr>
+																</thead>
+
+																<tbody>';
+
+		// Contador global de unidades (no se reinicia por proveedor)
+		$x = 1;
+
+		foreach ($orden_proveedores as $idx_prov => $proveedor_key) {
+			// Page-break entre proveedores (no antes del primero)
+			if ($idx_prov > 0) {
+				$html .= '<div style="page-break-before: always; break-before: page;"></div>';
+			}
+
+			// Cabecera del documento
+			$html .= $cabecera_doc;
+
+			// Etiqueta dinámica del encabezado LOTE <PROVEEDOR>
+			$etiqueta_lote = 'LOTE ' . mb_strtoupper($proveedor_key);
+
+			// Apertura de tabla con encabezado dinámico
+			$html .= str_replace('__ETIQUETA_LOTE__', $etiqueta_lote, $encabezado_tabla_html);
+
+			// Reset del ID por proveedor (control de rowspan dentro del grupo)
+			$id_distribucionunidad = 0;
+
+			foreach ($detalles_por_proveedor[$proveedor_key] as $row_datos) {
+				$codigo_planta = $row_datos["codigo_planta"];
+				$num_parte = $row_datos["num_parte"];
+				$cod_lote = $row_datos["cod_lote"];
+				$placa1 = $row_datos["cplaca"].((strlen($row_datos["PLACA2"]) == 0) ? '' : ' / '.$row_datos["PLACA2"]);
+				$peso_neto = $row_datos["PESO_NETO"];
+				$num_bigbag = $row_datos["num_bigbag"];
+				$tipo_carga = ((strlen($num_bigbag) > 0) ? $num_bigbag.' ' : '').$row_datos["TIPO_CARGA"];
+				$proveedorminero_ruc = $row_datos["PROVEEDORMINERO_RUC"];
+				$proveedorminero_razonsocial = $row_datos["PROVEEDORMINERO_RAZONSOCIAL"];
+				$guia_remitente = $row_datos["guiaremitente_serie"].' '.$row_datos["guiaremitente_numero"];
+				$guia_transportista = $row_datos["guiatransportista_serie"].' '.$row_datos["guiatransportista_numero"];
+				$id_modalidadenvio = $row_datos["guias_idmodalidadenvio"];
+				$total_guias = $row_datos["TOTAL_GUIAS"].' GRR / '.$row_datos["TOTAL_GUIAS"].' GRT';
+
+				$html .= '					<tr style="font-size: 14px; font-family: AgencyFB;">';
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$codigo_planta.((strlen($num_parte) == 0) ? '' : "<br>PARTE ".$num_parte);
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$cod_lote.((strlen($num_parte) == 0) ? '' : "<br>PARTE ".$num_parte);
+				$html .= '						</td>';
+
+				if ($id_distribucionunidad != $row_datos["ID_DISTRIBUCIONUNIDAD"]){
+					$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					$html .= '							'.$placa1;
+					$html .= '						</td>';
+
+					// Obteniendo total de guías
+					$total_guias = 0;
+
+					if ($id_modalidadenvio == 1 || $id_modalidadenvio == 2){
+						$q_totalguias = "SELECT COUNT(DISTINCT VD.lote_id_proveedorminero) AS TOTAL_GUIAS
+														   FROM despachos_segundotramo_distribucion_lotes DL
+														   			LEFT JOIN despachos_primertramo_validaciondatos VD ON DL.cod_lote = VD.lote_cod_lote
+														  WHERE id_distribucionunidad = ".$row_datos["ID_DISTRIBUCIONUNIDAD"];
+					}
+					else{
+						$q_totalguias = "SELECT COUNT(DISTINCT guias_idmodalidadenvio) AS TOTAL_GUIAS
+														   FROM despachos_segundotramo_distribucion_lotes
+														  WHERE id_distribucionunidad = ".$row_datos["ID_DISTRIBUCIONUNIDAD"];
+					}
+
+					if ($res_totalguias = mysqli_query($enlace, $q_totalguias)){
+						if (mysqli_num_rows($res_totalguias) > 0) {
+							while($row_totalguias = mysqli_fetch_array($res_totalguias)){
+								$total_guias = $row_totalguias["TOTAL_GUIAS"];
+							}
+						}
+					}
+				}
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.number_format($peso_neto, 2, '.', '');
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$tipo_carga;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$proveedorminero_razonsocial;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.$proveedorminero_ruc;
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.((strlen(trim($guia_remitente)) > 0) ? $guia_remitente : '<i style="font-size: 12px; color: #F23030;">Pendiente</i>');
+				$html .= '						</td>';
+
+				$html .= '						<td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+				$html .= '							'.((strlen(trim($guia_transportista)) > 0) ? $guia_transportista : '<i style="font-size: 12px; color: #F23030;">Pendiente</i>');
+				$html .= '						</td>';
+
+				if ($id_distribucionunidad != $row_datos["ID_DISTRIBUCIONUNIDAD"]){
+					$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					$html .= '							UNIDAD '.$x;
+					$html .= '						</td>';
+
+					$html .= '						<td rowspan="'.$row_datos["TOTAL_LOTES"].'" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					$html .= '							'.$total_guias;
+					$html .= '						</td>';
+
+					$x ++;
+				}
+
+				$id_distribucionunidad = $row_datos["ID_DISTRIBUCIONUNIDAD"];
+
+				$html .= '					</tr>';
+			}
+
+			// Cierre de tabla
+			$html .= '					</tbody>
+											</table>
+										</div>';
+		}
 
 	// // 3. Completando pie de página
 	// 	$html .= '<div class="row" style="margin-top: 50px; margin-left: 150px;">
