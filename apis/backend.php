@@ -40918,7 +40918,8 @@ switch ($_POST["accion"]) {
 																	 INNER JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
 																	 LEFT JOIN tbconfig_coordinadorestransporte CT ON U.id_coordinadortransporte = CT.Id
 														 WHERE DL.is_complemento = 0
-															 AND DL.guias_fecha IS NOT NULL";
+															 AND DL.guias_fecha IS NOT NULL
+															 AND P.id_planta = $id_planta ";
 		/*AND P.id_planta = " . $id_planta;*/
 
 		if (strlen($arr_lotes) > 0 || strlen($arr_codigosdespacho) > 0) {
