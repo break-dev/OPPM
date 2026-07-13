@@ -21451,7 +21451,8 @@ switch ($_POST["accion"]) {
 																 VD.balanza_is_descargado_usuarioregistro,
 																 VD.humedad_registromanual,
 																 VD.humedad_registromanual_fechahoraregistro,
-																 VD.humedad_registromanual_usuarioregistro
+																 VD.humedad_registromanual_usuarioregistro,
+																 VD.cambios_log AS CAMBIOS_LOG
 														FROM controlingresovehiculo I
 																 INNER JOIN tbconfig_tipoingresounidades IU ON I.id_tipoingresounidad = IU.Id
 																 LEFT JOIN tb_clientes T ON I.id_transportista = T.Id
@@ -21554,7 +21555,8 @@ switch ($_POST["accion"]) {
 																	'' AS balanza_is_descargado_usuarioregistro,
 																	'' AS humedad_registromanual,
 																  '' AS humedad_registromanual_fechahoraregistro,
-																  '' AS humedad_registromanual_usuarioregistro
+																  '' AS humedad_registromanual_usuarioregistro,
+																  L.cambios_log AS CAMBIOS_LOG
 														 FROM controlingresovehiculo I
 																	INNER JOIN tbconfig_tipoingresounidades IU ON I.id_tipoingresounidad = IU.Id
 																	INNER JOIN despachos_segundotramo_distribucion_unidades U ON DATE(I.dFechaIngreso) >= DATE(U.fecha_ingresoplanta)
@@ -21666,7 +21668,8 @@ switch ($_POST["accion"]) {
 																 '' AS balanza_is_descargado_usuarioregistro,
 																 '' AS humedad_registromanual,
 																 '' AS humedad_registromanual_fechahoraregistro,
-																 '' AS humedad_registromanual_usuarioregistro
+																 '' AS humedad_registromanual_usuarioregistro,
+																 '' AS CAMBIOS_LOG
 														FROM controlingresovehiculo I
 																 INNER JOIN tbconfig_tipoingresounidades IU ON I.id_tipoingresounidad = IU.Id
 																 LEFT JOIN tb_clientes T ON I.id_transportista = T.Id
@@ -21926,6 +21929,17 @@ switch ($_POST["accion"]) {
 
 						$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center; font-weight: bold;">';
 
+						// Check if changes_log exists and has entries
+						$has_logs = false;
+						$logs_json = '';
+						if (!empty($row_balanza["CAMBIOS_LOG"])) {
+							$arr_log = json_decode($row_balanza["CAMBIOS_LOG"], true);
+							if (is_array($arr_log) && count($arr_log) > 0) {
+								$has_logs = true;
+								$logs_json = htmlspecialchars($row_balanza["CAMBIOS_LOG"], ENT_QUOTES, 'UTF-8');
+							}
+						}
+
 						if (strlen($row_balanza["tFechaInicialBalanza"]) > 0) {
 							if ($row_balanza["id_tipoingresounidad"] == 2) {
 								$html .= '    <label id="lbl_pesoinicial_' . $row_balanza["id_CatalogoLotes"] . '">' . number_format($row_balanza["nPeso_InicialBalanza"] * 1000, 0, '.', ',') . '</label>';
@@ -21935,10 +21949,18 @@ switch ($_POST["accion"]) {
 
 							$html .= '    <br>';
 							$html .= '    <label style="font-size: 12px; font-weight: 400;">' . $row_balanza["tFechaInicialBalanza"] . ' ' . $row_balanza["tHoraInicialBalanza"] . '</label>';
+							$html .= '    <i class="bi bi-pencil-square" style="cursor: pointer; margin-left: 4px;" onclick="f_EditFechaBalanza(' . $row_balanza["id_CatalogoLotes"] . ', ' . $row_balanza["TIPO_CONDICION"] . ', \'inicial\', \'' . $row_balanza["tFechaInicialBalanza"] . ' ' . $row_balanza["tHoraInicialBalanza"] . '\')" title="Editar Fecha/Hora"></i>';
+							if ($has_logs) {
+								$html .= '    <i class="bi bi-clock-history text-primary" style="cursor: pointer; margin-left: 6px;" data-logs="' . $logs_json . '" onclick="f_VerLogCambios(this)" title="Ver Historial de Cambios"></i>';
+							}
 						} else {
 							$html .= '    <label style="font-size: 12px; font-weight: 400; color: #dc3545;">';
 							$html .= '    	<i>Pendiente</i>';
 							$html .= '    </label>';
+							$html .= '    <i class="bi bi-pencil-square" style="cursor: pointer; margin-left: 4px;" onclick="f_EditFechaBalanza(' . $row_balanza["id_CatalogoLotes"] . ', ' . $row_balanza["TIPO_CONDICION"] . ', \'inicial\', \'\')" title="Editar Fecha/Hora"></i>';
+							if ($has_logs) {
+								$html .= '    <i class="bi bi-clock-history text-primary" style="cursor: pointer; margin-left: 6px;" data-logs="' . $logs_json . '" onclick="f_VerLogCambios(this)" title="Ver Historial de Cambios"></i>';
+							}
 						}
 
 						$html .= '  </td>';
@@ -21954,10 +21976,18 @@ switch ($_POST["accion"]) {
 
 							$html .= '    <br>';
 							$html .= '    <label style="font-size: 12px; font-weight: 400;">' . $row_balanza["dFechaFinalBalanza"] . ' ' . $row_balanza["tHoraFinalBalanza"] . '</label>';
+							$html .= '    <i class="bi bi-pencil-square" style="cursor: pointer; margin-left: 4px;" onclick="f_EditFechaBalanza(' . $row_balanza["id_CatalogoLotes"] . ', ' . $row_balanza["TIPO_CONDICION"] . ', \'final\', \'' . $row_balanza["dFechaFinalBalanza"] . ' ' . $row_balanza["tHoraFinalBalanza"] . '\')" title="Editar Fecha/Hora"></i>';
+							if ($has_logs) {
+								$html .= '    <i class="bi bi-clock-history text-primary" style="cursor: pointer; margin-left: 6px;" data-logs="' . $logs_json . '" onclick="f_VerLogCambios(this)" title="Ver Historial de Cambios"></i>';
+							}
 						} else {
 							$html .= '    <label style="font-size: 12px; font-weight: 400; color: #dc3545;">';
 							$html .= '    	<i>Pendiente</i>';
 							$html .= '    </label>';
+							$html .= '    <i class="bi bi-pencil-square" style="cursor: pointer; margin-left: 4px;" onclick="f_EditFechaBalanza(' . $row_balanza["id_CatalogoLotes"] . ', ' . $row_balanza["TIPO_CONDICION"] . ', \'final\', \'\')" title="Editar Fecha/Hora"></i>';
+							if ($has_logs) {
+								$html .= '    <i class="bi bi-clock-history text-primary" style="cursor: pointer; margin-left: 6px;" data-logs="' . $logs_json . '" onclick="f_VerLogCambios(this)" title="Ver Historial de Cambios"></i>';
+							}
 						}
 
 						$html .= '  </td>';
@@ -26983,6 +27013,189 @@ switch ($_POST["accion"]) {
 					echo json_encode(array('estado' => $estado, 'peso' => $peso, 'peso_neto' => $peso_neto));
 
 					break;
+				}
+			}
+		}
+
+		echo json_encode(array('estado' => $estado));
+
+		break;
+
+	case 'grabar_EditFechaPesoinicial':
+		$estado = 0;
+		$id_registro    = intval($_POST["id_registro"]);
+		$tipo_condicion = intval($_POST["tipo_condicion"]);
+		$valor          = mysqli_real_escape_string($enlace, trim($_POST["valor"]));
+		$motivo         = mysqli_real_escape_string($enlace, trim($_POST["motivo"]));
+		$usuario        = $_SESSION["usu_usuario"];
+		$valor_anterior = '';
+		$cambios_log    = array();
+
+		if ($tipo_condicion == 2) {
+			// Segundo Tramo: tabla despachos_segundotramo_distribucion_lotes
+			// Columna de fecha inicial = peso_tara_fechahoraregistro
+			$q_old = "SELECT peso_tara_fechahoraregistro, cambios_log FROM despachos_segundotramo_distribucion_lotes WHERE Id = " . $id_registro;
+			if ($res_old = mysqli_query($enlace, $q_old)) {
+				if ($row_old = mysqli_fetch_assoc($res_old)) {
+					$valor_anterior = $row_old['peso_tara_fechahoraregistro'];
+					$cambios_log    = json_decode($row_old['cambios_log'], true);
+					if (!is_array($cambios_log)) $cambios_log = array();
+				}
+			}
+
+			$cambios_log[] = array(
+				"descripcion"      => "Fecha de Pesaje Inicial",
+				"valor_anterior"   => $valor_anterior,
+				"valor_resultante" => $valor,
+				"usuario"          => $usuario,
+				"motivo"           => $motivo
+			);
+
+			$json_log = mysqli_real_escape_string($enlace, json_encode($cambios_log, JSON_UNESCAPED_UNICODE));
+
+			$q_update = "UPDATE despachos_segundotramo_distribucion_lotes
+			                SET peso_tara_fechahoraregistro = '" . $valor . "',
+			                    cambios_log = '" . $json_log . "'
+			              WHERE Id = " . $id_registro;
+
+			if (mysqli_query($enlace, $q_update)) {
+				$estado = 1;
+			}
+		} else {
+			// Primer Tramo: tabla despachos_primertramo_validaciondatos
+			// Columna de fecha inicial = lote_pesoinicial_fechahoraregistro
+			// id_registro = id_CatalogoLotes => necesitamos el cod_lote
+			$q_lote = "SELECT ccod_Lote FROM catalogolotes WHERE id_CatalogoLotes = " . $id_registro;
+			$cod_lote = '';
+			if ($res_lote = mysqli_query($enlace, $q_lote)) {
+				if ($row_lote = mysqli_fetch_assoc($res_lote)) {
+					$cod_lote = $row_lote['ccod_Lote'];
+				}
+			}
+
+			if (strlen($cod_lote) > 0) {
+				$q_old = "SELECT lote_pesoinicial_fechahoraregistro, cambios_log FROM despachos_primertramo_validaciondatos WHERE lote_cod_lote = '" . mysqli_real_escape_string($enlace, $cod_lote) . "'";
+				if ($res_old = mysqli_query($enlace, $q_old)) {
+					if ($row_old = mysqli_fetch_assoc($res_old)) {
+						$valor_anterior = $row_old['lote_pesoinicial_fechahoraregistro'];
+						$cambios_log    = json_decode($row_old['cambios_log'], true);
+						if (!is_array($cambios_log)) $cambios_log = array();
+					}
+				}
+
+				$cambios_log[] = array(
+					"descripcion"      => "Fecha de Pesaje Inicial",
+					"valor_anterior"   => $valor_anterior,
+					"valor_resultante" => $valor,
+					"usuario"          => $usuario,
+					"motivo"           => $motivo
+				);
+
+				$json_log = mysqli_real_escape_string($enlace, json_encode($cambios_log, JSON_UNESCAPED_UNICODE));
+
+				$q_update = "UPDATE despachos_primertramo_validaciondatos
+				                SET lote_pesoinicial_fechahoraregistro = '" . $valor . "',
+				                    cambios_log = '" . $json_log . "'
+				              WHERE lote_cod_lote = '" . mysqli_real_escape_string($enlace, $cod_lote) . "'";
+
+				if (mysqli_query($enlace, $q_update)) {
+					$estado = 1;
+
+					// Sincroniza con catalogolotes (tFechaInicialBalanza y tHoraInicialBalanza)
+					$fecha_part = substr($valor, 0, 10);
+					$hora_part  = substr($valor, 11);
+					mysqli_query($enlace, "UPDATE catalogolotes SET tFechaInicialBalanza = '" . $fecha_part . "', tHoraInicialBalanza = '" . $hora_part . "' WHERE id_CatalogoLotes = " . $id_registro);
+				}
+			}
+		}
+
+		echo json_encode(array('estado' => $estado));
+
+		break;
+
+	case 'grabar_EditFechaPesofinal':
+		$estado = 0;
+		$id_registro    = intval($_POST["id_registro"]);
+		$tipo_condicion = intval($_POST["tipo_condicion"]);
+		$valor          = mysqli_real_escape_string($enlace, trim($_POST["valor"]));
+		$motivo         = mysqli_real_escape_string($enlace, trim($_POST["motivo"]));
+		$usuario        = $_SESSION["usu_usuario"];
+		$valor_anterior = '';
+		$cambios_log    = array();
+
+		if ($tipo_condicion == 2) {
+			// Segundo Tramo: tabla despachos_segundotramo_distribucion_lotes
+			// Columna de fecha final = peso_bruto_fechahoraregistro
+			$q_old = "SELECT peso_bruto_fechahoraregistro, cambios_log FROM despachos_segundotramo_distribucion_lotes WHERE Id = " . $id_registro;
+			if ($res_old = mysqli_query($enlace, $q_old)) {
+				if ($row_old = mysqli_fetch_assoc($res_old)) {
+					$valor_anterior = $row_old['peso_bruto_fechahoraregistro'];
+					$cambios_log    = json_decode($row_old['cambios_log'], true);
+					if (!is_array($cambios_log)) $cambios_log = array();
+				}
+			}
+
+			$cambios_log[] = array(
+				"descripcion"      => "Fecha de Pesaje Final",
+				"valor_anterior"   => $valor_anterior,
+				"valor_resultante" => $valor,
+				"usuario"          => $usuario,
+				"motivo"           => $motivo
+			);
+
+			$json_log = mysqli_real_escape_string($enlace, json_encode($cambios_log, JSON_UNESCAPED_UNICODE));
+
+			$q_update = "UPDATE despachos_segundotramo_distribucion_lotes
+			                SET peso_bruto_fechahoraregistro = '" . $valor . "',
+			                    cambios_log = '" . $json_log . "'
+			              WHERE Id = " . $id_registro;
+
+			if (mysqli_query($enlace, $q_update)) {
+				$estado = 1;
+			}
+		} else {
+			// Primer Tramo: tabla despachos_primertramo_validaciondatos
+			// Columna de fecha final = lote_pesofinal_fechahoraregistro
+			$q_lote = "SELECT ccod_Lote FROM catalogolotes WHERE id_CatalogoLotes = " . $id_registro;
+			$cod_lote = '';
+			if ($res_lote = mysqli_query($enlace, $q_lote)) {
+				if ($row_lote = mysqli_fetch_assoc($res_lote)) {
+					$cod_lote = $row_lote['ccod_Lote'];
+				}
+			}
+
+			if (strlen($cod_lote) > 0) {
+				$q_old = "SELECT lote_pesofinal_fechahoraregistro, cambios_log FROM despachos_primertramo_validaciondatos WHERE lote_cod_lote = '" . mysqli_real_escape_string($enlace, $cod_lote) . "'";
+				if ($res_old = mysqli_query($enlace, $q_old)) {
+					if ($row_old = mysqli_fetch_assoc($res_old)) {
+						$valor_anterior = $row_old['lote_pesofinal_fechahoraregistro'];
+						$cambios_log    = json_decode($row_old['cambios_log'], true);
+						if (!is_array($cambios_log)) $cambios_log = array();
+					}
+				}
+
+				$cambios_log[] = array(
+					"descripcion"      => "Fecha de Pesaje Final",
+					"valor_anterior"   => $valor_anterior,
+					"valor_resultante" => $valor,
+					"usuario"          => $usuario,
+					"motivo"           => $motivo
+				);
+
+				$json_log = mysqli_real_escape_string($enlace, json_encode($cambios_log, JSON_UNESCAPED_UNICODE));
+
+				$q_update = "UPDATE despachos_primertramo_validaciondatos
+				                SET lote_pesofinal_fechahoraregistro = '" . $valor . "',
+				                    cambios_log = '" . $json_log . "'
+				              WHERE lote_cod_lote = '" . mysqli_real_escape_string($enlace, $cod_lote) . "'";
+
+				if (mysqli_query($enlace, $q_update)) {
+					$estado = 1;
+
+					// Sincroniza con catalogolotes (dFechaFinalBalanza y tHoraFinalBalanza)
+					$fecha_part = substr($valor, 0, 10);
+					$hora_part  = substr($valor, 11);
+					mysqli_query($enlace, "UPDATE catalogolotes SET dFechaFinalBalanza = '" . $fecha_part . "', tHoraFinalBalanza = '" . $hora_part . "' WHERE id_CatalogoLotes = " . $id_registro);
 				}
 			}
 		}

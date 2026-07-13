@@ -1465,7 +1465,68 @@
 		    </div>
 		  </div>
 		</div>
-		
+
+		<!-- Modal: Editar Fecha/Hora de Pesaje -->
+		<div class="modal fade" id="modal_editFechaBalanza" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal_editFechaBalanzaLabel" aria-hidden="true">
+		  <div class="modal-dialog">
+		    <div class="modal-content" style="margin-top: 150px;">
+		      <div class="modal-header" style="background-color: #f8da62;">
+		        <h1 class="modal-title fs-5" id="modal_editFechaBalanzaLabel"></h1>
+		        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body">
+		        <div class="row" style="padding: 10px;">
+		        	<label style="font-weight: bold; margin-bottom: 5px;">Fecha y Hora:</label>
+		        	<input id="ef_fechahora" type="datetime-local" step="1" class="form-control">
+		        </div>
+		        <div class="row" style="padding: 10px;">
+		        	<label style="font-weight: bold; margin-bottom: 5px;">Motivo de la modificación: <span style="color: #dc3545;">*</span></label>
+		        	<textarea id="ef_motivo" class="form-control" rows="3" placeholder="Indique el motivo del cambio..."></textarea>
+		        </div>
+		      </div>
+
+		      <input id="ef_id_registro" type="hidden">
+		      <input id="ef_tipo_condicion" type="hidden">
+		      <input id="ef_campo" type="hidden">
+
+		      <div class="modal-footer">
+		        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+		        <button type="button" class="btn btn-primary" onclick="f_GrabarFechaBalanza();">Grabar</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+		<!-- Modal: Ver Historial de Cambios (Timeline) -->
+		<div class="modal fade" id="modal_verLogCambios" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal_verLogCambiosLabel" aria-hidden="true">
+		  <div class="modal-dialog modal-dialog-centered modal-lg">
+		    <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);">
+		      <div class="modal-header" style="background: linear-gradient(135deg, #f8da62, #f5c400); color: #212529; border-top-left-radius: 12px; border-top-right-radius: 12px; border-bottom: none;">
+		        <h5 class="modal-title font-weight-bold" id="modal_verLogCambiosLabel" style="font-weight: 700; font-size: 1.15rem; margin: 0;">
+		          <i class="bi bi-clock-history"></i> Historial de Modificaciones
+		        </h5>
+		        <button type="button" class="btn-close btn-close-dark" data-bs-dismiss="modal" aria-label="Close"></button>
+		      </div>
+		      <div class="modal-body" style="background-color: #fcfcfc; padding: 25px 30px; max-height: 60vh; overflow-y: auto;">
+		        <!-- Contenedor del Timeline -->
+		        <div id="timeline_container" style="position: relative; padding-left: 30px; margin-top: 10px; margin-bottom: 10px;">
+		          <!-- Línea vertical del timeline -->
+		          <div style="position: absolute; left: 9px; top: 5px; bottom: 5px; width: 3px; background-color: #e9ecef; border-radius: 2px;"></div>
+		          
+		          <div id="timeline_items_list">
+		            <!-- Los elementos del timeline se cargarán dinámicamente aquí -->
+		          </div>
+		        </div>
+		      </div>
+		      <div class="modal-footer" style="background-color: #f8f9fa; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; border-top: 1px solid #dee2e6;">
+		        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" style="font-size: 14px; font-weight: 600; border-radius: 8px;">Cerrar</button>
+		      </div>
+		    </div>
+		  </div>
+		</div>
+
+
+
 		<div class="modal fade" id="modal_showimagenes" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal_showimagenesLabel" aria-hidden="true">
 		  <div class="modal-dialog modal-lg">
 		    <div id="modal_showimagenes_content" class="modal-content">
@@ -1713,6 +1774,119 @@
 
           }, "json");
     	};
+
+    	function f_EditFechaBalanza(id_registro, tipo_condicion, campo, valor_actual) {
+			// campo: 'inicial' o 'final'
+			$("#ef_id_registro").val(id_registro);
+			$("#ef_tipo_condicion").val(tipo_condicion);
+			$("#ef_campo").val(campo);
+			$("#ef_motivo").val('');
+
+			// Formato datetime-local: YYYY-MM-DDTHH:MM:SS
+			var fechahora_formateada = '';
+			if (valor_actual && valor_actual.trim().length > 0) {
+				fechahora_formateada = valor_actual.trim().replace(' ', 'T');
+			}
+			$("#ef_fechahora").val(fechahora_formateada);
+
+			var titulo = (campo === 'inicial') ? 'Editar Fecha/Hora Pesaje Inicial' : 'Editar Fecha/Hora Pesaje Final';
+			$("#modal_editFechaBalanzaLabel").text(titulo);
+
+			f_OpenModal('modal_editFechaBalanza');
+		}
+
+		function f_GrabarFechaBalanza() {
+			var id_registro    = $("#ef_id_registro").val();
+			var tipo_condicion = $("#ef_tipo_condicion").val();
+			var campo          = $("#ef_campo").val();
+			var motivo         = $("#ef_motivo").val().trim();
+			var fechahora      = $("#ef_fechahora").val();
+
+			if (fechahora.trim().length === 0) {
+				alert("Debe seleccionar una fecha y hora.");
+				return;
+			}
+
+			if (motivo.length === 0) {
+				alert("Debe indicar el motivo de la modificación.");
+				return;
+			}
+
+			// Convertir de YYYY-MM-DDTHH:MM:SS a YYYY-MM-DD HH:MM:SS
+			var valor = fechahora.replace('T', ' ');
+
+			var accion = (campo === 'inicial') ? 'grabar_EditFechaPesoinicial' : 'grabar_EditFechaPesofinal';
+
+			$.post("apis/backend.php", {
+				accion: accion,
+				id_registro: id_registro,
+				tipo_condicion: tipo_condicion,
+				valor: valor,
+				motivo: motivo
+			}, function(data) {
+				if (data.estado == 1) {
+					f_cerrarModal('modal_editFechaBalanza');
+					f_LoadResultados();
+				} else {
+					alert("Ocurrió un error al guardar los datos.");
+				}
+			}, "json");
+		}
+
+		function f_VerLogCambios(elem) {
+			var rawLogs = $(elem).attr('data-logs');
+			if (!rawLogs) return;
+			
+			try {
+				var logs = JSON.parse(rawLogs);
+				if (!Array.isArray(logs) || logs.length === 0) return;
+				
+				var html = '';
+				for (var i = logs.length - 1; i >= 0; i--) {
+					var log = logs[i];
+					
+					var valAnterior = log.valor_anterior || '(Vacío)';
+					var valResultante = log.valor_resultante || '(Vacío)';
+					var usuario = log.usuario || 'Desconocido';
+					var motivo = log.motivo || 'No especificado';
+					var descripcion = log.descripcion || 'Modificación';
+					
+					html += '<div style="position: relative; margin-bottom: 25px;">';
+					html += '  <div style="position: absolute; left: -26px; top: 3px; width: 15px; height: 15px; border-radius: 50%; background-color: #ffc107; border: 3px solid #fff; box-shadow: 0 0 0 3px #ffc107;"></div>';
+					html += '  <div style="background-color: #fff; padding: 15px; border-radius: 10px; border: 1px solid #e9ecef; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">';
+					html += '    <div class="d-flex justify-content-between align-items-center mb-2" style="border-bottom: 1px dashed #f0f0f0; padding-bottom: 6px;">';
+					html += '      <span style="font-weight: 700; color: #495057; font-size: 0.95rem;">' + descripcion + '</span>';
+					html += '      <span class="badge bg-light text-dark" style="font-size: 0.75rem; border: 1px solid #dee2e6;"><i class="bi bi-person-fill text-muted"></i> ' + usuario + '</span>';
+					html += '    </div>';
+					html += '    <div class="row g-2 mb-2 align-items-center text-center" style="font-size: 0.85rem; background-color: #fafafa; border-radius: 6px; padding: 8px 4px; margin: 0;">';
+					html += '      <div class="col-5 text-truncate" title="' + valAnterior + '" style="color: #6c757d;">';
+					html += '        <small style="display:block; font-size:0.7rem; text-transform:uppercase; color:#b0b0b0;">Valor Anterior</small>';
+					html += '        <strong>' + valAnterior + '</strong>';
+					html += '      </div>';
+					html += '      <div class="col-2 text-muted">';
+					html += '        <i class="bi bi-arrow-right-short" style="font-size: 1.2rem; vertical-align: middle;"></i>';
+					html += '      </div>';
+					html += '      <div class="col-5 text-truncate" title="' + valResultante + '" style="color: #198754;">';
+					html += '        <small style="display:block; font-size:0.7rem; text-transform:uppercase; color:#b0b0b0;">Valor Resultante</small>';
+					html += '        <strong>' + valResultante + '</strong>';
+					html += '      </div>';
+					html += '    </div>';
+					html += '    <div style="font-size: 0.85rem; color: #495057; padding-left: 4px;">';
+					html += '      <span style="font-weight: 600; color: #6c757d; font-size: 0.8rem;"><i class="bi bi-chat-left-text-fill text-muted me-1"></i> Motivo:</span>';
+					html += '      <p class="mb-0 text-muted" style="font-style: italic; white-space: pre-wrap; margin-top: 2px;">' + motivo + '</p>';
+					html += '    </div>';
+					html += '  </div>';
+					html += '</div>';
+				}
+				
+				$("#timeline_items_list").html(html);
+				f_OpenModal('modal_verLogCambios');
+				
+			} catch(e) {
+				console.error(e);
+				alert("Ocurrió un error al cargar el historial de cambios.");
+			}
+		}
 
     	function f_AdminRecepcion(){
         f_OpenModal('modal_addrecepcion');
