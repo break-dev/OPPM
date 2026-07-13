@@ -40808,6 +40808,10 @@ switch ($_POST["accion"]) {
 		$res = array();
 		$estado = 0;
 		$d = 1;
+		$cod_despacho = '';
+		$id_unidad = '';
+		$id_modalidadenvio = '';
+		$arr_modalidades = array();
 
 		// Recuperando parámetros
 		$id_planta = mysqli_real_escape_string($enlace, $_POST["id_planta"]);
@@ -40968,7 +40972,13 @@ switch ($_POST["accion"]) {
 						$is_cerrado = 1;
 					}
 
-					$html .= '<tr id="tr_detalle_' . $d . '" class="bg_selected bg_selected_' . $d . '" style="font-size: 14px; cursor: pointer; background-color: ' . (($d == 1) ? '#FFF587' : '#ffffff') . ';" onclick="f_LoadItemInformacionLotes(' . $d . ", '" . $row_datos["codigo_despacho"] . "', " . $row_datos["ID_UNIDAD"] . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ')">';
+					// Recolecta modalidades unicas
+					$modalidad_key = $row_datos["ID_MODALIDAD_ENVIO"];
+					if (!isset($arr_modalidades[$modalidad_key])) {
+						$arr_modalidades[$modalidad_key] = array('id' => $row_datos["ID_MODALIDAD_ENVIO"], 'descripcion' => $row_datos["MODALIDAD_ENVIO"]);
+					}
+
+					$html .= '<tr id="tr_detalle_' . $d . '" class="bg_selected bg_selected_' . $d . '" data-modalidad="' . $row_datos["ID_MODALIDAD_ENVIO"] . '" style="font-size: 14px; cursor: pointer; background-color: ' . (($d == 1) ? '#FFF587' : '#ffffff') . ';" onclick="f_LoadItemInformacionLotes(' . $d . ", '" . $row_datos["codigo_despacho"] . "', " . $row_datos["ID_UNIDAD"] . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ')">';
 
 					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 					$html .= '    ' . $d;
@@ -41099,7 +41109,7 @@ switch ($_POST["accion"]) {
 			}
 		}
 
-		echo json_encode(array('estado' => $estado, 'html' => $html, 'cod_despacho' => $cod_despacho, 'id_unidad' => $id_unidad, 'id_modalidadenvio' => $id_modalidadenvio));
+		echo json_encode(array('estado' => $estado, 'html' => $html, 'cod_despacho' => $cod_despacho, 'id_unidad' => $id_unidad, 'id_modalidadenvio' => $id_modalidadenvio, 'modalidades' => array_values($arr_modalidades)));
 
 		break;
 

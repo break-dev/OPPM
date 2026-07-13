@@ -48,6 +48,9 @@ if (!isset($_SESSION["Id"])) {
 		let coddespacho_Selected = 0;
 		let idunidad_Selected = 0;
 		let idmodalidadenvio_Selected = 0;
+		// Lista de unidades: HTML original y filtrada para filtro dinamico
+		let html_listaunidades_original = '';
+		let html_listaunidades_filtrada = '';
 	</script>
 
 	<style>
@@ -136,7 +139,7 @@ if (!isset($_SESSION["Id"])) {
 								</div>
 							</div>
 
-							<div class="col-md-4 col-sm-4 col-xs-12" style="padding: 2px;">
+							<div class="col-md-3 col-sm-3 col-xs-12" style="padding: 2px;">
 								<div
 									style="border: solid; border-width: 1px; border-color: #E6E9ED; border-radius: 7px; padding: 10px;">
 									<div class="row" style="padding-left: 10px; padding-right: 10px;">
@@ -186,7 +189,7 @@ if (!isset($_SESSION["Id"])) {
 								</div>
 							</div>
 
-							<div class="col-md-3 col-sm-3 col-xs-12" style="padding: 2px;">
+							<div class="col-md-2 col-sm-2 col-xs-12" style="padding: 2px;">
 								<div
 									style="border: solid; border-width: 1px; border-color: #E6E9ED; border-radius: 7px; padding: 10px;">
 									<div class="row" style="padding-left: 10px; padding-right: 10px;">
@@ -230,6 +233,28 @@ if (!isset($_SESSION["Id"])) {
 
 											</select>
 										</div>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-md-2 col-sm-2 col-xs-12" style="padding: 2px;">
+								<div
+									style="border: solid; border-width: 1px; border-color: #E6E9ED; border-radius: 7px; padding: 10px;">
+									<div class="row" style="padding-left: 10px; padding-right: 10px;">
+										<h6 style="font-size: 14px;">Por Modalidad de Envío</h6>
+									</div>
+
+									<div class="row" style="margin-top: 1px; padding-left: 20px; padding-right: 20px;">
+										<hr style="border-color: #D9D9D9;" />
+									</div>
+
+									<div class="d-flex"
+										style="margin-top: -5px; padding-left: 10px; padding-right: 10px;">
+										<select id="filtro_modalidad_unidades" class="form-select"
+											style="text-align: left; font-size: 14px;"
+											onchange="f_FiltrarUnidadesPorModalidad()">
+											<option selected value="">Todas las Modalidades</option>
+										</select>
 									</div>
 								</div>
 							</div>
@@ -844,7 +869,20 @@ if (!isset($_SESSION["Id"])) {
 			$.post("apis/backend.php", { accion: "get_GestionTransporte_ListaUnidades", id_planta: _id_planta, fecha_inicio: fecha_inicio, fecha_fin: fecha_fin, estado_cierre: filtro_estadocierre, filtro_codigodespacho: filtro_codigodespacho, filtro_lote: filtro_lote },
 				function (data) {
 					if (data.estado == 1) {
-						$("#tbl_listaunidades").html(data.html);
+						// Guardar HTML original y filtrado para filtrado dinamico
+						html_listaunidades_original = data.html;
+						html_listaunidades_filtrada = data.html;
+						$("#tbl_listaunidades").html(html_listaunidades_original);
+
+						// Poblar select de modalidades unicas
+						var $selModal = $("#filtro_modalidad_unidades");
+						$selModal.find('option:not(:first)').remove();
+						if (data.modalidades && data.modalidades.length > 0) {
+							$.each(data.modalidades, function(i, m) {
+								$selModal.append('<option value="' + m.id + '">' + m.descripcion + '</option>');
+							});
+						}
+						$selModal.val('');
 
 						itemunidad_Selected = 1;
 						coddespacho_Selected = data.cod_despacho;
@@ -877,6 +915,23 @@ if (!isset($_SESSION["Id"])) {
 
 			$("#lbl_tituloplanta").html($("#td_planta_" + _item).html().trim());
 		}
+
+		function f_FiltrarUnidadesPorModalidad() {
+			var modalidadSeleccionada = $("#filtro_modalidad_unidades").val();
+
+			if (modalidadSeleccionada === '') {
+				html_listaunidades_filtrada = html_listaunidades_original;
+			} else {
+				// Filtrar los <tr> segun data-modalidad
+				var $filtrados = $(html_listaunidades_original).filter('[data-modalidad="' + modalidadSeleccionada + '"]');
+				var container = $('<div>');
+				container.append($filtrados);
+				html_listaunidades_filtrada = container.html();
+			}
+
+			$("#tbl_listaunidades").html(html_listaunidades_filtrada);
+		}
+
 
 		function f_LoadItemInformacionLotes(_item, _cod_despacho, _id_unidad, _id_modalidadenvio) {
 			// Pinta selección
