@@ -23,7 +23,7 @@ ini_set('display_startuo_errors', 0);
 $id_md5 = $_GET["x"];
 
 // Ruta logo
-$ruta_images = 'https://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+$ruta_images = 'http://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
 $ruta_images = substr($ruta_images, 0, strpos($ruta_images, 'print_ticketbalanza.php')) . 'images/';
 
 function saveLog($datos)
@@ -387,10 +387,10 @@ SELECT
     TM.descripcion AS TIPO_MATERIAL,
     V.despacho_observacion,
     V.lote_pesoinicial_fechahoraregistro,
-    V.lote_pesofinal_fechahoraregistro,
+    COALESCE(V.lote_pesofinal_fechahoraregistro, CONCAT(lot.dFechaFinalBalanza, ' ', lot.tHoraFinalBalanza)) as lote_pesofinal_fechahoraregistro,
     V.lote_peso_inicial AS lote_peso_bruto,
-    V.lote_peso_final AS lote_peso_tara,
-    V.lote_peso_neto,
+    IF(V.lote_peso_final = 0 or V.lote_peso_final IS NULL, lot.nPeso_FinalBalanza, V.lote_peso_final) AS lote_peso_tara,
+    COALESCE(V.lote_peso_neto, lot.nPesoNetoBalanza) as lote_peso_neto,
     V.operaciones_humedad,
     V.lote_peso_seco,
     V.unidad_capacidad,
