@@ -26,6 +26,68 @@ $id_md5 = $_GET["x"];
 $ruta_images = 'https://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
 $ruta_images = substr($ruta_images, 0, strpos($ruta_images, 'print_ticketbalanza.php')) . 'images/';
 
+function saveLog($datos)
+{
+	try {
+		// Carpeta 'logs' en el mismo nivel que este script
+		$directorio = __DIR__ . DIRECTORY_SEPARATOR . 'logs';
+
+		// un nombre de archivo por día para no sobrescribir todo siempre
+		$nombreArchivo = 'log_' . date('Y-m-d') . '.json';
+		$rutaCompleta = $directorio . DIRECTORY_SEPARATOR . $nombreArchivo;
+
+		// Crear directorio si no existe con permisos totales
+		if (!is_dir($directorio)) {
+			mkdir($directorio, 0777, true);
+			chmod($directorio, 0777); // para Linux
+		}
+
+		// Limpieza de caracteres especiales (\r, \n, \t) ---
+		$limpiar = function ($item) use (&$limpiar) {
+			if (is_array($item)) {
+				return array_map($limpiar, $item);
+			}
+			if (is_string($item)) {
+				return str_replace(["\r", "\n", "\t"], ' ', $item);
+			}
+			return $item;
+		};
+		$datosLimpios = $limpiar($datos);
+
+		// Agregamos una marca de tiempo al registro para saber cuándo ocurrió exactamente
+		$registro = [
+			'timestamp' => date('Y-m-d H:i:s'),
+			'data' => $datosLimpios
+		];
+
+		// Si el archivo ya existe, leemos y añadimos, si no, creamos nuevo array
+		$listaLogs = [];
+		if (file_exists($rutaCompleta)) {
+			$contenidoActual = file_get_contents($rutaCompleta);
+			$listaLogs = json_decode($contenidoActual, true) ?: [];
+		}
+
+		$listaLogs[] = $registro;
+
+		// Convertir a JSON
+		// JSON_UNESCAPED_SLASHES evita las barras extra en rutas de Windows
+		$jsonContenido = json_encode($listaLogs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+		// Escribir y forzar permisos
+		if (file_put_contents($rutaCompleta, $jsonContenido) !== false) {
+			chmod($rutaCompleta, 0777);
+			return true;
+		}
+
+		return false;
+
+	} catch (Exception $e) {
+		// si todo falla, enviamos al log del servidor
+		// error_log("Fallo crítico en saveLog: " . $e->getMessage());
+		return false;
+	}
+}
+
 function nombre_numeros($_numero)
 {
 	// Determinando la cantidad de dígitos
@@ -298,7 +360,10 @@ SELECT
     CD.dni_licencia AS CONDUCTOR_DNI,
     CD.nombres AS CONDUCTOR_NOMBRES,
     V.lote_id_tipocarga,
+    
+    -- 
     TC.descripcion AS TIPO_CARGA,
+    
     V.lote_id_zonaorigen,
     ZO.descripcion AS ZONA_ORIGEN,
     V.lote_id_proveedorminero,
@@ -343,26 +408,29 @@ FROM
     despachos_primertramo_validaciondatos V
 
 INNER JOIN catalogolotes lot on lot.id_CatalogoLotes = V.lote_id_lote
+INNER JOIN controlingresovehiculo ctrl on ctrl.id_controlIngresoVehiculo = lot.id_controlIngresoVehiculo
 LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
 LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
 LEFT JOIN tbconfig_tipovehiculo TV ON T.id_tipovehiculo = TV.Id
-LEFT JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
+LEFT JOIN tbconfig_conductores CD ON ctrl.id_choferes = CD.Id or V.guias_idchofer = CD.Id
 LEFT JOIN tbconfig_zonaorigen ZO ON V.lote_id_zonaorigen = ZO.Id OR ZO.Id = lot.balanza_id_zonaorigen
 LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
 LEFT JOIN tbconfig_proveedoresmineros_concesion CCS ON V.lote_id_proveedorminero_concesion = CCS.Id
 LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
 LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
-LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id
+LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id or lot.balanza_id_tipocarga = TC.Id 
 LEFT JOIN tbconfig_producto P ON V.lote_id_producto = P.Id
 LEFT JOIN consolidado_lotes_cierrecontable CRL ON V.Id = CRL.id_registro AND CRL.id_tipoingreso = 1
 
 WHERE MD5(V.Id) = '" . $id_md5 . "'";
 
+saveLog(["query" => $q_balanza]);
+
 if ($res_balanza = mysqli_query($enlace, $q_balanza)) {
 	if (mysqli_num_rows($res_balanza) > 0) {
 		while ($row_balanza = mysqli_fetch_array($res_balanza)) {
 			if ($row_balanza["lote_cod_lote"] == 'AUM-2370') {
-				$ticket_balanza = $row_balanza["lote_num_ticket"] . ((strlen($row_balanza["lote_ticket_orden"]) > 0) ? '-' . $row_balanza["lote_ticket_orden"] : '');
+				$ticket_balanza = $row_balanza["lote_num_ticket"] . ((strlen($row_balanza["lote_ticket_orden"]) > 0) ? '---' . $row_balanza["lote_ticket_orden"] : '');
 			} else {
 				$ticket_balanza = $row_balanza["guias_ticketbalanza"];
 			}
