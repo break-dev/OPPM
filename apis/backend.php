@@ -32183,7 +32183,7 @@ switch ($_POST["accion"]) {
 							strlen($row_validacion["despacho_id_modalidadenvio"]) == 0 ||
 							strlen($row_validacion["lote_id_proveedorminero"]) == 0
 						) {
-							$cierre_pendiente = 1;
+							$cierre_pendiente = 0;
 						}
 					} else {
 						if (
@@ -32192,7 +32192,7 @@ switch ($_POST["accion"]) {
 							strlen($row_validacion["despacho_id_destinoplanta"]) == 0 ||
 							strlen($row_validacion["lote_id_proveedorminero"]) == 0
 						) {
-							$cierre_pendiente = 1;
+							$cierre_pendiente = 0;
 						}
 					}
 
@@ -32566,33 +32566,33 @@ switch ($_POST["accion"]) {
 					$html .= '  </td>';
 
 					// Seteo de columnas de Cierre
-					$html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					// $html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
-					if ($cierre_pendiente == 0) {
-						if ($row_validacion["is_cerrado"] == 0) {
-							$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);" onclick="f_handleCheckboxClick(event);">';
-						} else {
-							$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ", '" . $row_validacion["lote_cod_lote"] . "'" . ')"><u> Reabrir </u></label>';
-						}
-					}
+					// if ($cierre_pendiente == 0) {
+					// 	if ($row_validacion["is_cerrado"] == 0) {
+					// 		$html .= '		<input id="chk_cierre_' . $d . '" class="form-check-input chk_cierre" type="checkbox" style="transform: scale(1.5);" onclick="f_handleCheckboxClick(event);">';
+					// 	} else {
+					// 		$html .= '		<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' . $d . ", '" . $row_validacion["lote_cod_lote"] . "'" . ')"><u> Reabrir </u></label>';
+					// 	}
+					// }
 
-					$html .= '  </td>';
+					// $html .= '  </td>';
 
-					$html .= '  <td id="td_cierre_2_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					// $html .= '  <td id="td_cierre_2_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
-					if ($row_validacion["is_cerrado"] == 1) {
-						$html .= '		' . $row_validacion["cerrado_fechahoraregistro"];
-					}
+					// if ($row_validacion["is_cerrado"] == 1) {
+					// 	$html .= '		' . $row_validacion["cerrado_fechahoraregistro"];
+					// }
 
-					$html .= '  </td>';
+					// $html .= '  </td>';
 
-					$html .= '  <td id="td_cierre_3_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					// $html .= '  <td id="td_cierre_3_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
-					if ($row_validacion["is_cerrado"] == 1) {
-						$html .= '		' . $row_validacion["cerrado_usuarioregistro"];
-					}
+					// if ($row_validacion["is_cerrado"] == 1) {
+					// 	$html .= '		' . $row_validacion["cerrado_usuarioregistro"];
+					// }
 
-					$html .= '  </td>';
+					// $html .= '  </td>';
 
 					$html .= '</tr>';
 

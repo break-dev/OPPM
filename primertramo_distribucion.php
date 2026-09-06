@@ -363,7 +363,7 @@ if (!isset($_SESSION["Id"])) {
 
 										<div class="col-md-4 col-sm-4 col-xs-12">
 											<div class="d-flex justify-content-end">
-												<button class="btn btn-danger" type="button" onclick="f_ConfirmarCierre();" style="min-width: 150px; color: #ffffff; height: 40px; font-size: 14px; margin-top: -5px; margin-bottom: 5px;">
+												<button class="btn btn-danger" type="button" onclick="f_ConfirmarCierre();" style="min-width: 150px; color: #ffffff; height: 40px; font-size: 14px; margin-top: -5px; margin-bottom: 5px;" hidden>
 													<b> Confirmar Cierre</b>
 												</button>
 											</div>
@@ -452,7 +452,7 @@ if (!isset($_SESSION["Id"])) {
 														Observación
 													</th>
 
-													<th class="sticky-2Cxa" rowspan="2" colspan="3" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; border-top-right-radius: 15px;">
+													<th class="sticky-2Cxa" rowspan="2" colspan="3" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; border-top-right-radius: 15px;" hidden>
 														Cierre
 													</th>
 												</tr>
@@ -600,16 +600,16 @@ if (!isset($_SESSION["Id"])) {
 														<input id="fil_28" type="text" class="form-control filter col-md-12 col-xs-12" style="text-align: center; font-weight: bold; font-size: 14px; text-transform: uppercase;">
 													</th>
 
-													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;">
+													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;" hidden>
 														Sel.<br>
 														<input id="th_Chk" class="form-check-input" type="checkbox" style="margin-top: 5px; transform: scale(1.5);" onchange="f_SelectChkCierre();">
 													</th>
 
-													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 100px;">
+													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 100px;" hidden>
 														Fecha Hora
 													</th>
 
-													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;">
+													<th class="sticky-2Cxc" style="text-align: center; border: solid; border-width: 1px; background-color: #F23030; border-color: #ffffff; color: #ffffff; vertical-align: middle; min-width: 80px;" hidden>
 														Usuario
 													</th>
 												</tr>
@@ -1374,7 +1374,7 @@ if (!isset($_SESSION["Id"])) {
 					if (data.estado == 1) {
 						$("#tbl_detalle").html(data.html);
 
-						f_SetInputDisabled();
+						// f_SetInputDisabled();
 
 						// Carga por defecto el primer item
 						f_LoadItemLote(1, data.cod_lote);
