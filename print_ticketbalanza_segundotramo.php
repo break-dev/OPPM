@@ -278,98 +278,117 @@ $pesofinal_fechahora = '';
 $pesofinal_observacion = '';
 $guia_remitente = '';
 $guia_transportista = '';
+$usuario_registro = '';
 
 $m = 1;
 
-$q_datos = "SELECT DL.Id,
-											 MD5(DL.Id) AS ID_MD5,
-											 PD.cod_lote,
-											 /*DL.num_parte,*/
+$q_datos = "
+SELECT
+    DL.Id,
+    MD5(DL.Id) AS ID_MD5,
+    PD.cod_lote,
 
-											 (CASE WHEN (SELECT COUNT(DL_x.Id)
-																	   FROM despachos_segundotramo_distribucion_lotes DL_x
-																	  WHERE DL_x.is_complemento_de = DL.Id) > 0
-										  	  THEN 1
-										    ELSE CASE WHEN DL.is_complemento = 1
-										   				 THEN (SELECT CC_x.lote_item
-																			 FROM consolidado_lotes_cierrecontable CC_x
-																			WHERE CC_x.id_registro = DL.Id
-														   					AND CC_x.id_tipoingreso = 2
-														   					AND lote_item <> 1)
-										   			 ELSE DL.num_parte END END) AS num_parte,
 
-											 CL.num_ticketbalanza,
-											 -- DATE(V.lote_pesoinicial_fechahoraregistro) AS FECHA_INGRESOBALANZA,
-											 IFNULL(DATE(DL.peso_bruto_fechahoraregistro), DL.guias_fecha) AS FECHA_INGRESOBALANZA,
-											 DL.guias_placa1 AS PLACA1,
-											 DL.guias_placa2 AS PLACA2,
-											 PD.codigo_planta,
-											 DL.guiaremitente_serie,
-											 DL.guiaremitente_numero,
-											 DL.guiatransportista_serie,
-											 DL.guiatransportista_numero,
-											 TR.documento AS TRANSPORTISTA_RUC,
-											 TR.razon_social AS TRANSPORTISTA_RAZONSOCIAL,
-											 TV.descripcion AS TIPO_VEHICULO,
-											 CH.licencia_conducir AS CONDUCTOR_DNI,
-											 CH.nombres AS CONDUCTOR_NOMBRES,
-											 DL.id_tipocarga,
-											 TC.descripcion AS TIPO_CARGA,
-											 DL.num_bigbag,
-											 'PLANTA HUANCACO' AS ZONA_ORIGEN,
-											 RE.ruc AS REMITENTE_RUC,
-											 RE.razon_social AS REMITENTE_RAZONSOCIAL,
-											 PR.descripcion AS PRODUCTO,
-											 TM.descripcion AS TIPO_MINERAL,
-											 DL.observacion,
-											 DL.peso_bruto_fechahoraregistro,
-											 DL.peso_tara_fechahoraregistro,
-											 DL.peso_bruto,
-											 DL.peso_tara,
-											 DL.peso_neto,
-											 DL.is_cerradolote,
-											 DL.cerradolote_fechahoraregistro,
-											 DL.cerradolote_usuarioregistro,
-											 DL.is_complemento,
-											 IFNULL(DL.cierrelote_complementotara, 0) AS COMPLEMENTO_TARA,
-											 
-							         (SELECT CASE WHEN COUNT(DL_x.Id) > 0
-							         				 	 THEN 1
-							         				 ELSE 0 END
-							         		FROM despachos_segundotramo_distribucion_lotes DL_x
-							         	 WHERE DL_x.is_complemento_de = DL.Id) AS TIENE_COMPLEMENTO,
-											 
-							         (SELECT SUM(DL_x.peso_distribuido)
-												  FROM despachos_segundotramo_distribucion_lotes DL_x
-												 WHERE DL_x.Id IN (SELECT DL_x2.Id
-												 										 FROM despachos_segundotramo_distribucion_lotes DL_x2
-												 									  WHERE DL_x2.is_complemento_de = DL.Id)) AS COMPLEMENTO_PESODISTRIBUIDO,
+    (
+    CASE 
+        WHEN (SELECT COUNT(DL_x.Id) FROM despachos_segundotramo_distribucion_lotes DL_x WHERE DL_x.is_complemento_de = DL.Id) > 0 
+        THEN 1
+        -- 
+        ELSE 
+            CASE 
+                WHEN DL.is_complemento = 1 
+                THEN (SELECT CC_x.lote_item FROM consolidado_lotes_cierrecontable CC_x WHERE CC_x.id_registro = DL.Id AND CC_x.id_tipoingreso = 2 AND lote_item <> 1) 
+                -- 
+                ELSE DL.num_parte
+            END
+    END
+    ) AS num_parte,
 
-							         (SELECT SUM(DL_x.peso_distribuido)
-												  FROM despachos_segundotramo_distribucion_lotes DL_x
-												 WHERE DL_x.Id = DL.Id) AS COMPLEMENTO_PESODISTRIBUIDO2
+    CL.num_ticketbalanza,
+    IFNULL(DATE(DL.peso_bruto_fechahoraregistro),DL.guias_fecha) AS FECHA_INGRESOBALANZA,
 
-									FROM despachos_segundotramo_programacion_detalle PD
-											 INNER JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
-											 INNER JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
-											 INNER JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad
-											 AND PD.cod_lote = DL.cod_lote
-											 INNER JOIN transporte UN ON U.id_unidad = UN.id_transporte
-											 LEFT JOIN transporte UN2 ON U.id_unidad2 = UN2.id_transporte
-											 INNER JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
-											 INNER JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
-											 LEFT JOIN tbconfig_modalidadenvio ME ON PD.id_modalidadenvio = ME.Id
-											 INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
-											 INNER JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
-											 INNER JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
-											 INNER JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
-											 INNER JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino
-											 AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
-											 LEFT JOIN tbconfig_producto PR ON V.lote_id_producto = PR.Id
-											 LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
-											 LEFT JOIN consolidado_lotes_cierrecontable CL ON DL.Id = CL.id_registro
-											  AND CL.id_tipoingreso = 2
-								 WHERE MD5(DL.Id) = '" . $id_md5 . "'";
+    DL.guias_placa1 AS PLACA1,
+    DL.guias_placa2 AS PLACA2,
+    PD.codigo_planta,
+    DL.guiaremitente_serie,
+    DL.guiaremitente_numero,
+    DL.guiatransportista_serie,
+    DL.guiatransportista_numero,
+    TR.documento AS TRANSPORTISTA_RUC,
+    TR.razon_social AS TRANSPORTISTA_RAZONSOCIAL,
+    TV.descripcion AS TIPO_VEHICULO,
+    CH.licencia_conducir AS CONDUCTOR_DNI,
+    CH.nombres AS CONDUCTOR_NOMBRES,
+    DL.id_tipocarga,
+    TC.descripcion AS TIPO_CARGA,
+    DL.num_bigbag,
+    'PLANTA HUANCACO' AS ZONA_ORIGEN,
+    RE.ruc AS REMITENTE_RUC,
+    RE.razon_social AS REMITENTE_RAZONSOCIAL,
+    PR.descripcion AS PRODUCTO,
+    TM.descripcion AS TIPO_MINERAL,
+    DL.observacion,
+    DL.peso_bruto_fechahoraregistro,
+    DL.peso_tara_fechahoraregistro,
+    DL.peso_bruto,
+    DL.peso_tara,
+    DL.peso_neto,
+    DL.is_cerradolote,
+    DL.cerradolote_fechahoraregistro,
+    DL.cerradolote_usuarioregistro,
+    DL.is_complemento,
+
+    IFNULL(DL.cierrelote_complementotara,0) AS COMPLEMENTO_TARA,
+
+    (
+    SELECT 
+        CASE 
+            WHEN COUNT(DL_x.Id) > 0 THEN 1 
+            ELSE 0
+        END
+    FROM despachos_segundotramo_distribucion_lotes DL_x
+    WHERE DL_x.is_complemento_de = DL.Id
+    ) AS TIENE_COMPLEMENTO,
+    
+    (
+    SELECT SUM(DL_x.peso_distribuido)
+    FROM despachos_segundotramo_distribucion_lotes DL_x
+    WHERE DL_x.Id IN(
+        SELECT DL_x2.Id
+        FROM despachos_segundotramo_distribucion_lotes DL_x2
+        WHERE DL_x2.is_complemento_de = DL.Id
+        )
+    ) AS COMPLEMENTO_PESODISTRIBUIDO,
+
+
+    (
+        SELECT SUM(DL_x.peso_distribuido)
+        FROM despachos_segundotramo_distribucion_lotes DL_x
+        WHERE DL_x.Id = DL.Id
+    ) AS COMPLEMENTO_PESODISTRIBUIDO2,
+    
+    COALESCE(usu.usu_usuario, CL.fechahora_usuario)  as usuario_registro
+
+FROM despachos_segundotramo_programacion_detalle PD
+INNER JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
+INNER JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
+INNER JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad AND PD.cod_lote = DL.cod_lote
+INNER JOIN transporte UN ON U.id_unidad = UN.id_transporte
+LEFT JOIN transporte UN2 ON U.id_unidad2 = UN2.id_transporte
+INNER JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
+INNER JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
+LEFT JOIN tbconfig_modalidadenvio ME ON PD.id_modalidadenvio = ME.Id
+INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
+INNER JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
+INNER JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
+INNER JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
+INNER JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
+LEFT JOIN tbconfig_producto PR ON V.lote_id_producto = PR.Id
+LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
+LEFT JOIN consolidado_lotes_cierrecontable CL ON DL.Id = CL.id_registro AND CL.id_tipoingreso = 2
+LEFT JOIN tb_usuario usu on usu.Id = CL.fechahora_usuario
+
+WHERE MD5(DL.Id) = '" . $id_md5 . "'";
 
 if ($res_datos = mysqli_query($enlace, $q_datos)) {
 	if (mysqli_num_rows($res_datos) > 0) {
@@ -396,6 +415,7 @@ if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			$observacion = $row_datos["observacion"];
 			$guia_remitente = $row_datos["guiaremitente_serie"] . '-' . $row_datos["guiaremitente_numero"];
 			$guia_transportista = $row_datos["guiatransportista_serie"] . '-' . $row_datos["guiatransportista_numero"];
+			$usuario_registro = $row_datos["usuario_registro"];
 
 			// Obteniendo Peso Neto
 			$peso_neto = $row_datos["peso_neto"] * 1000;
@@ -649,6 +669,11 @@ if ($id_tipocarga == 5) {
 // 									<label>'.((strlen(trim($observacion)) == 0) ? '---' : $observacion);
 
 $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
+											<label style="font-family: AgencyFBb;">Operario: </label>
+											<label>' . ((strlen(trim($usuario_registro)) == 0) ? '---' : $usuario_registro) . '</label>
+										</div>
+
+										<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
 											<label style="font-family: AgencyFBb;">Observación: </label>
 											<label>' . $observacion;
 

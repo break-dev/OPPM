@@ -23,7 +23,7 @@ ini_set('display_startuo_errors', 0);
 $id_md5 = $_GET["x"];
 
 // Ruta logo
-$ruta_images = 'http://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
+$ruta_images = 'https://' . $_SERVER["HTTP_HOST"] . $_SERVER["REQUEST_URI"];
 $ruta_images = substr($ruta_images, 0, strpos($ruta_images, 'print_ticketbalanza.php')) . 'images/';
 
 function saveLog($datos)
@@ -340,6 +340,7 @@ $pesofinal_fechahora = '';
 $pesofinal_observacion = '';
 $guia_remitente = '';
 $guia_transportista = '';
+$usuario_registro = '';
 
 $m = 1;
 
@@ -403,11 +404,17 @@ SELECT
     COALESCE(V.guiaremitente_serie, lot.serie_guia_remitente) as guiaremitente_serie,
     COALESCE(V.guiaremitente_serie, lot.numero_guia_remitente) as guiaremitente_numero,
     COALESCE(V.guiaremitente_serie, lot.serie_guia_transportista) as guiatransportista_serie,
-    COALESCE(V.guiaremitente_serie, lot.numero_guia_transportista) as guiatransportista_numero
+    COALESCE(V.guiaremitente_serie, lot.numero_guia_transportista) as guiatransportista_numero,
+    COALESCE(usu.usu_usuario, tk.usuario_registro) as usuario_registro
 FROM
     despachos_primertramo_validaciondatos V
 
 INNER JOIN catalogolotes lot on lot.id_CatalogoLotes = V.lote_id_lote
+
+-- para saber quien hizo el registro
+LEFT JOIN correlativo_ticketsbalanza tk on tk.id_lote = lot.id_CatalogoLotes and tk.is_primertramo = 1
+LEFT JOIN tb_usuario usu on usu.Id = tk.usuario_registro
+
 INNER JOIN controlingresovehiculo ctrl on ctrl.id_controlIngresoVehiculo = lot.id_controlIngresoVehiculo
 LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
 LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
@@ -455,6 +462,7 @@ if ($res_balanza = mysqli_query($enlace, $q_balanza)) {
 			$observacion = $row_balanza["despacho_observacion"];
 			$guia_remitente = $row_balanza["guiaremitente_serie"] . '-' . $row_balanza["guiaremitente_numero"];
 			$guia_transportista = $row_balanza["guiatransportista_serie"] . '-' . $row_balanza["guiatransportista_numero"];
+			$usuario_registro = $row_balanza["usuario_registro"];
 
 			$peso_inicial = $row_balanza["lote_peso_bruto"];
 			$pesoinicial_fechahora = $row_balanza["lote_pesoinicial_fechahoraregistro"];
@@ -644,6 +652,11 @@ if (strlen($observacion) == 0 && strlen($lote_ticket_orden) > 0) {
 }
 
 $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
+											<label style="font-family: AgencyFBb;">Operario: </label>
+											<label>' . ((strlen(trim($usuario_registro)) == 0) ? '---' : $usuario_registro) . '</label>
+										</div>
+
+										<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
 											<label style="font-family: AgencyFBb;">Observación: </label>
 											<label>' . ((strlen(trim($observacion)) == 0) ? '---' : $observacion) . '</label>
 										</div>
