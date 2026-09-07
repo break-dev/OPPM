@@ -355,6 +355,7 @@ SELECT
     CRL.num_ticketbalanza AS guias_ticketbalanza,
     DATE(CRL.fecha_ingresobalanza) AS FECHA_TICKET,
     V.balanza_placa,
+	V.balanza_placa2,
     CL_T.documento AS TRANSPORTISTA_RUC,
     UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
     TV.descripcion AS TIPO_VEHICULO,
@@ -445,7 +446,7 @@ if ($res_balanza = mysqli_query($enlace, $q_balanza)) {
 			$lote_ticket_orden = $row_balanza["lote_ticket_orden"];
 			$cod_lote = $row_balanza["lote_cod_lote"];
 			$placa_1 = $row_balanza["balanza_placa"];
-			// $placa_2 = $row_balanza["placa2"];
+			$placa_2 = $row_balanza["balanza_placa2"];
 			$transportista_documento = $row_balanza["TRANSPORTISTA_RUC"];
 			$transportista_razonsocial = $row_balanza["TRANSPORTISTA_RAZONSOCIAL"];
 			$tipo_vehiculo = $row_balanza["TIPO_VEHICULO"];
