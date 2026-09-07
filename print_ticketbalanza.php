@@ -647,8 +647,14 @@ $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-a
 											<label>' . $tipo_carga . '</label>
 										</div>';
 
+
 if (strlen($observacion) == 0 && strlen($lote_ticket_orden) > 0) {
 	$observacion = 'PARTE ' . $lote_ticket_orden;
+}
+
+// Si no es llacuabamba, no se vera nada en el campo de observaciones
+if ($id_proveedor_minero != 73) {
+	$observacion = '';
 }
 
 $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
@@ -656,6 +662,7 @@ $html .= '			<div class="row" style="margin-top: -5px; margin-left: 10px; text-a
 											<label>' . ((strlen(trim($usuario_registro)) == 0) ? '---' : $usuario_registro) . '</label>
 										</div>
 
+										
 										<div class="row" style="margin-top: -5px; margin-left: 10px; text-align: left;">
 											<label style="font-family: AgencyFBb;">Observación: </label>
 											<label>' . ((strlen(trim($observacion)) == 0) ? '---' : $observacion) . '</label>
