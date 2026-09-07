@@ -1084,7 +1084,7 @@
               </div>
               <div id="div_guias_inputs" style="display: none;">
                 <div class="d-flex" style="padding: 5px; align-items: center;">
-                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 13px;">
+                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 14px;">
                     G. Remitente:
                   </div>
                   <div class="col-md-3 col-sm-3 col-xs-3">
@@ -1096,7 +1096,7 @@
                   </div>
                 </div>
                 <div class="d-flex" style="padding: 5px; align-items: center;">
-                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 13px;">
+                  <div class="col-md-4 col-sm-4 col-xs-4" style="padding: 5px; font-weight: bold; font-size: 14px;">
                     G. Transportista:
                   </div>
                   <div class="col-md-3 col-sm-3 col-xs-3">
@@ -1224,9 +1224,9 @@
               <label style="font-style: italic;"> Grabando datos...</label>
             </div>
 
-            <button type="button" class="btn btn-secondary wt_grabarlote_button" data-bs-dismiss="modal" style="font-size: 14px;">Cerrar</button>
+             <button type="button" class="btn btn-secondary wt_grabarlote_button" data-bs-dismiss="modal" style="font-size: 14px;">Cerrar</button>
 
-             <button type="button" class="btn btn-warning wt_grabarlote_button" style="font-size: 14px;" onclick="f_ConfirmarLote();">Confirmar</button>
+             <button id="btn_confirmarlote" type="button" class="btn btn-warning wt_grabarlote_button" style="font-size: 14px;" onclick="f_ConfirmarLote();">Confirmar</button>
           </div>
         </div>
       </div>
@@ -1931,6 +1931,9 @@
       }
 
       function f_GestionLotes(_id_ingreso, _id_lote, _placa, _is_pesoinicial, _peso_inicial, _pesoinicial_observacion, _cod_aum, _num_ticket, balanza_id_tipocarga, balanza_id_zonaorigen, balanza_id_proveedorminero, balanza_id_encargadomuestra, balanza_id_producto, balanza_id_tipomineral, balanza_observacion){
+        // MAX: Resetear contador de listas AJAX cargadas para esta apertura del modal
+          _listasCargadas = 0;
+
         // Setea título
           if (_is_pesoinicial == 1){
             $("#modal_gestionlotesLabel_a").html('Peso Inicial para Lote: ');
@@ -1950,10 +1953,20 @@
           if (_is_pesoinicial == 1){
             f_LoadListaZonaOrigen(0);
             f_LoadListaEncargadosMuestra(0);
+
+            // Para Peso Inicial el usuario llena los campos manualmente
+            $("#btn_confirmarlote").prop('disabled', false);
           }
           else{
-            f_LoadListaZonaOrigen(balanza_id_zonaorigen);
-            f_LoadListaEncargadosMuestra(balanza_id_encargadomuestra);
+            // MAX: Se deshabilita Confirmar hasta que ambas listas AJAX terminen.
+            // Si el usuario hace click antes, los valores llegan vacíos al backend
+            // (zonaorigen y encargado se llenan por AJAX) y se guardarían como NULL.
+            $("#btn_confirmarlote").prop('disabled', true);
+
+            // MAX: Las funciones de carga asignan el atributo "selected" en la opción
+            // correspondiente y setean txt_CodigoEncargadoMuestra al terminar.
+            f_LoadListaZonaOrigen(balanza_id_zonaorigen, f_HabilitarConfirmarLote);
+            f_LoadListaEncargadosMuestra(balanza_id_encargadomuestra, f_HabilitarConfirmarLote);
           }
 
         // Limpiando campos
@@ -1961,31 +1974,43 @@
           $("#div_ListaEncargadosMuestra").hide();
 
           if (_is_pesoinicial == 1){
-            $("#lote_tipocarga").val('');
-            $("#lote_zonaorigen").val('');
-            $("#lote_proveedorminero").val('');
-            $("#lote_encargado").val('');
-            $("#lote_producto").val('');
-            $("#lote_tipomaterial").val('');
+            // MAX: Usar val(null).trigger('change') para que Select2 sincronice su
+            // estado interno con el DOM. Sin el trigger, Select2 sigue mostrando
+            // visualmente los valores del lote anterior pero al hacer submit
+            // envía vacío (o viceversa).
+            $("#lote_tipocarga").val(null).trigger('change');
+            $("#lote_zonaorigen").val(null).trigger('change');
+            $("#lote_proveedorminero").val(null).trigger('change');
+            $("#lote_encargado").val(null).trigger('change');
+            $("#lote_producto").val(null).trigger('change');
+            $("#lote_tipomaterial").val(null).trigger('change');
             $("#lote_observacion").val('');
+
+            // MAX: Limpiar también los inputs relacionados al Peso Final que
+            // puedan contener residuos del lote anterior (peso_final, tara, neto).
+            $("#lote_pesofinal").val('');
+            $("#lote_pesofinal_observacion").val('');
+            $("#lote_tara").val('');
+            $("#lote_pesoneto").val('');
+            $("#lote_pesobruto").val('');
           }
           else{
+            // Campos con opciones precargadas desde PHP: se pueden setear de inmediato
             $("#lote_tipocarga").val(balanza_id_tipocarga);
             $("#lote_tipocarga").trigger('change');
-            $("#lote_zonaorigen").val(balanza_id_zonaorigen);
-            $("#lote_zonaorigen").trigger('change');
             $("#lote_proveedorminero").val(balanza_id_proveedorminero);
             $("#lote_proveedorminero").trigger('change');
-
-            $("#lote_encargado").val(balanza_id_encargadomuestra);
-            $("#lote_encargado").trigger('change');
-            $("#txt_CodigoEncargadoMuestra").val($("#lote_encargado option:selected").text());
-
             $("#lote_producto").val(balanza_id_producto);
             $("#lote_producto").trigger('change');
             $("#lote_tipomaterial").val(balanza_id_tipomineral);
             $("#lote_tipomaterial").trigger('change');
             $("#lote_observacion").val(balanza_observacion);
+
+            // MAX: lote_zonaorigen y lote_encargado se llenan por AJAX; no se asigna
+            // .val() aquí porque dispararía un change con valor vacío antes de que
+            // existan las opciones, lo que provocaba que Select2 "deseleccionara"
+            // el valor auto-completado. La selección la maneja la función de carga
+            // mediante el atributo selected en el <option>.
           }
 
         // Setea objetos
@@ -2052,6 +2077,20 @@
           $("#guia_remitente_numero").val('');
           $("#guia_transportista_serie").val('');
           $("#guia_transportista_numero").val('');
+        }
+      }
+
+      // MAX: Habilita el botón Confirmar luego de que las listas AJAX (zona origen
+      // y encargado de muestra) hayan terminado de poblarse. Se llama como callback
+      // desde f_LoadListaZonaOrigen y f_LoadListaEncargadosMuestra; es idempotente
+      // porque la segunda invocación no hace nada si ya está habilitado.
+      var _listasCargadas = 0;
+      function f_HabilitarConfirmarLote(){
+        _listasCargadas ++;
+
+        if (_listasCargadas >= 2){
+          $("#btn_confirmarlote").prop('disabled', false);
+          _listasCargadas = 0;
         }
       }
 
@@ -2286,11 +2325,13 @@
           }
       }
 
-      function f_LoadListaZonaOrigen(_id_zonaorigen){
+      function f_LoadListaZonaOrigen(_id_zonaorigen, _callback){
         var _html = '<option></option>';
         _html += '<option value="x" style="font-size: 6px;" disabled></option>';
 
-        // $("#registro_zonaorigen").html('');
+        // MAX: Limpiar valor de Select2 antes de reemplazar el HTML para evitar
+        // que mantenga internamente el valor del lote anterior.
+        $("#lote_zonaorigen").val(null).trigger('change');
         $("#lote_zonaorigen").html('');
 
         $.post( "apis/backend.php", { accion: "get_ListaZonaOrigen" }, 
@@ -2307,17 +2348,20 @@
             }
 
             // $("#registro_zonaorigen").html(_html);
-            $("#lote_zonaorigen").html(_html);
+            $("#lote_zonaorigen").html(_html).trigger('change');
 
+            if (_callback) _callback();
           }, "json");
       };
 
-      function f_LoadListaEncargadosMuestra(_id_encarado){
+      function f_LoadListaEncargadosMuestra(_id_encarado, _callback){
         var _html_tbl = '';
         var _html = '<option></option>';
         _html += '<option value="x" style="font-size: 6px;" disabled></option>';
 
-        // $("#registro_encargado").html('');
+        // MAX: Limpiar valor de Select2 antes de reemplazar el HTML para evitar
+        // que mantenga internamente el valor del lote anterior.
+        $("#lote_encargado").val(null).trigger('change');
         $("#lote_encargado").html('');
 
         $.post( "apis/backend.php", { accion: "get_ListaEncargadosMuestra" }, 
@@ -2325,7 +2369,7 @@
             if(data.estado == 1){
               $.each( data.registros, function( key, val ) {
                 // _html += '<option value="' + val.Id + '" ' + ((_id_encarado > 0) ? ((_id_encarado == val.Id) ? 'selected' : '') : '') + '>' + val.nombres.toUpperCase() + '</option>';
-                _html += '<option value="' + val.Id + '" ' + ((_id_encarado > 0) ? ((_id_encarado == val.Id) ? 'selected' : '') : '') + '>' + val.codigo + '</font></option>';
+                _html += '<option value="' + val.Id + '" ' + ((_id_encarado > 0) ? ((_id_encarado == val.Id) ? 'selected' : '') : '') + '>' + val.codigo + '</option>';
 
                 _html += '<option value="x" style="font-size: 6px;" disabled></option>';
 
@@ -2342,9 +2386,18 @@
             }
 
             // $("#registro_encargado").html(_html);
-            $("#lote_encargado").html(_html);
+            $("#lote_encargado").html(_html).trigger('change');
             $("#tbl_EncargadosMuestra").html(_html_tbl);
 
+            // Sincronizar txt_CodigoEncargadoMuestra con la opción seleccionada tras auto-completar
+            if (_id_encarado > 0){
+              $("#txt_CodigoEncargadoMuestra").val($("#lote_encargado option:selected").text());
+            }
+            else{
+              $("#txt_CodigoEncargadoMuestra").val('');
+            }
+
+            if (_callback) _callback();
           }, "json");
       };
 
@@ -2996,21 +3049,32 @@
             return;
           }
 
+        // MAX: Se abre la ventana del ticket de inmediato (síncronamente al click del
+        // usuario) para que el navegador NO la bloquee como popup. Luego, cuando llega
+        // la respuesta del backend, se redirige esa ventana al URL definitivo del
+        // ticket. Antes esto fallaba en Peso Final porque window.open() se llamaba
+        // dentro del callback async de $.post.
+          var _ticketWin = window.open('about:blank', '_blank');
+
         // Guardando datos
           $.post( "apis/backend.php", { accion: "grabar_GestionLotes", id_ingreso: _id_ingreso, id_lote: _id_lote, is_pesoinicial: _is_pesoinicial, peso_inicial: _peso_inicial, peso_final: _peso_final, tipocarga: _tipocarga, zonaorigen: _zonaorigen, proveedorminero: _proveedorminero, encargado: _encargado, producto: _producto, tipomaterial: _tipomaterial, observacion: _observacion, serie_guia_remitente: _serie_guia_remitente, numero_guia_remitente: _numero_guia_remitente, serie_guia_transportista: _serie_guia_transportista, numero_guia_transportista: _numero_guia_transportista }, 
             function( data ) {
               if(data.estado == 1){
-                // Si es Peso Final debe imprimir el Ticket
-                // MAX (15/04/2023 14:12): Debe imprimir tanto en el primer como en el segundo peso
-                  // if (_is_pesoinicial == 0){
-                    // window.open('print_ticketbalanza_prev.php?x=' + data.id_md5);
-                    window.open('print_ticketbalanza.php?x=' + data.id_md5);
-                  // }
+                // Imprimir el Ticket (tanto en Peso Inicial como en Peso Final)
+                if (_ticketWin && data.id_md5){
+                  _ticketWin.location = 'print_ticketbalanza.php?x=' + data.id_md5;
+                }
+                else{
+                  if (_ticketWin) _ticketWin.close();
+                }
 
                 f_cerrarModal('modal_gestionlotes');
 
                 f_LoadCards_UnidadesValidacion();
                 f_LoadCards_LotesPesoFinal();
+              }
+              else{
+                if (_ticketWin) _ticketWin.close();
               }
 
             }, "json");

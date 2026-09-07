@@ -206,7 +206,7 @@ function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $u
 
 	// Grabando cierre
 	$q_update = "UPDATE despachos_primertramo_validaciondatos";
-	$q_update .= "  SET is_cerradolote = 1, ";
+	$q_update .= "  SET is_cerradolote = 1, is_cerrado = 1, ";
 	$q_update .= "			cerradolote_fechahoraregistro = '" . $g_fecha . "', ";
 	$q_update .= "			cerradolote_usuarioregistro = '" . $usuario_registro . "'";
 	$q_update .= " WHERE Id = " . $id_despacho_validacion . "";
@@ -23974,105 +23974,88 @@ switch ($_POST["accion"]) {
 		$html = '';
 
 		// Query para obtener el tipo: "Recepción de Mineral"
-		$q_validacion = "	SELECT DISTINCT
-																	 V.Id,
-																	 MD5(V.Id) AS ID_MD5,
-																	 V.lote_id_lote,
-																	 V.lote_cod_lote,
-																	 /*V.lote_num_ticket,*/
-																	 V.lote_ticket_orden,
-																	 CRL.num_ticketbalanza,
-																	 V.guias_ticketbalanza,
-																	 DATE(V.lote_pesoinicial_fechahoraregistro) AS FECHA_INGRESOBALANZA,
-																	 V.balanza_placa,
-																	 V.balanza_placa2,
-																	 CL_T.documento AS TRANSPORTISTA_RUC,
-																	 UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
+		$q_validacion = "
+		SELECT DISTINCT
+			V.Id,
+			MD5(V.Id) AS ID_MD5,
+			V.lote_id_lote,
+			V.lote_cod_lote,
+			V.lote_ticket_orden,
+			CRL.num_ticketbalanza,
+			V.guias_ticketbalanza,
+			DATE(V.lote_pesoinicial_fechahoraregistro) AS FECHA_INGRESOBALANZA,
+			V.balanza_placa,
+			V.balanza_placa2,
+			CL_T.documento AS TRANSPORTISTA_RUC,
+			UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
+			TV.descripcion AS TIPO_VEHICULO,
+			CD.dni_licencia AS CONDUCTOR_DNI,
+			CD.nombres AS CONDUCTOR_NOMBRES,
+			V.lote_id_tipocarga,
+			TC.descripcion AS TIPO_CARGA,
+			V.lote_id_zonaorigen,
+			ZO.descripcion AS ZONA_ORIGEN,
+			V.lote_id_proveedorminero,
+			CL.documento AS PROVEEDORMINERO_RUC,
+			UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
+			CL.proveedorminero_concesion,
+			CL.proveedorminero_codigounico,
+			CL.proveedorminero_ubicacion,
+			CL.proveedorminero_ubicacion_departamento,
+			CL.proveedorminero_ubicacion_provincia,
+			
+			CASE 
+				WHEN V.lote_id_zonaorigen = 25 THEN ZO.descripcion 
+				ELSE CCS.procedencia_distrito
+			END AS procedencia_distrito,
+			
+			V.lote_id_encargadomuestra,
+			UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
+			V.lote_id_producto,
+			UPPER(P.descripcion) AS PRODUCTO,
+			V.lote_id_tipomineral,
+			TM.descripcion AS TIPO_MATERIAL,
+			V.despacho_observacion,
+			V.lote_pesoinicial_fechahoraregistro,
+			V.lote_pesofinal_fechahoraregistro,
+			V.lote_peso_inicial AS lote_peso_bruto,
+			V.lote_peso_final AS lote_peso_tara,
+			V.lote_peso_neto,
+			V.operaciones_humedad,
+			V.lote_peso_seco,
+			V.unidad_capacidad,
+			V.unidad_tara,
+			V.unidad_idmarca,
+			V.despacho_color,
+			V.is_cerrado,
+			V.cerrado_fechahoraregistro,
+			V.cerrado_usuarioregistro,
+			V.is_cerradolote,
+            V.cerradolote_fechahoraregistro,
+			COALESCE(usu.usu_usuario, V.cerradolote_usuarioregistro) AS cerradolote_usuarioregistro,
+			V.guiaremitente_serie,
+			V.guiaremitente_numero,
+			V.guiatransportista_serie,
+			V.guiatransportista_numero
+		FROM despachos_primertramo_validaciondatos V
 
-																	 TV.descripcion AS TIPO_VEHICULO,
+		LEFT JOIN tb_usuario usu on usu.Id = V.cerradolote_usuarioregistro
+		LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
+		LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
+		LEFT JOIN tbconfig_tipovehiculo TV ON T.id_tipovehiculo = TV.Id
+		LEFT JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
+		LEFT JOIN tbconfig_zonaorigen ZO ON V.lote_id_zonaorigen = ZO.Id
+		LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
+		LEFT JOIN tbconfig_proveedoresmineros_concesion CCS ON V.lote_id_proveedorminero_concesion = CCS.Id
+		LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
+		LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
+		LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id
+		LEFT JOIN tbconfig_producto P ON V.lote_id_producto = P.Id
+		LEFT JOIN consolidado_lotes_cierrecontable CRL ON V.Id = CRL.id_registro AND CRL.id_tipoingreso = 1
 
-																	 CD.dni_licencia AS CONDUCTOR_DNI,
-																	 CD.nombres AS CONDUCTOR_NOMBRES,
-
-																	 V.lote_id_tipocarga,
-																	 TC.descripcion AS TIPO_CARGA,
-
-																	 V.lote_id_zonaorigen,
-																	 ZO.descripcion AS ZONA_ORIGEN,
-
-																	 V.lote_id_proveedorminero,
-																	 CL.documento AS PROVEEDORMINERO_RUC,
-																	 UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
-																	 CL.proveedorminero_concesion,
-																	 CL.proveedorminero_codigounico,
-																	 CL.proveedorminero_ubicacion,
-																	 CL.proveedorminero_ubicacion_departamento,
-																	 CL.proveedorminero_ubicacion_provincia,
-																	 /*CL.proveedorminero_ubicacion_distrito,*/
-
-																	 CASE WHEN V.lote_id_zonaorigen = 25
-																		 THEN ZO.descripcion
-																	 ELSE CCS.procedencia_distrito END AS procedencia_distrito,
-
-																	 V.lote_id_encargadomuestra,
-																	 UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
-
-																	 V.lote_id_producto,
-																	 UPPER(P.descripcion) AS PRODUCTO,
-
-																	 V.lote_id_tipomineral,
-																	 TM.descripcion AS TIPO_MATERIAL,
-
-																	 V.despacho_observacion,
-
-																	 
-																	 V.lote_pesoinicial_fechahoraregistro,
-																	 V.lote_pesofinal_fechahoraregistro,
-																	 V.lote_peso_inicial AS lote_peso_bruto,
-																	 V.lote_peso_final AS lote_peso_tara,
-																	 V.lote_peso_neto,
-																	 V.operaciones_humedad,
-																	 V.lote_peso_seco,
-																	 V.unidad_capacidad,
-																	 V.unidad_tara,
-																	 V.unidad_idmarca,
-																	 V.despacho_color,
-
-																	 V.is_cerrado,
-																	 V.cerrado_fechahoraregistro,
-																	 V.cerrado_usuarioregistro,
-
-																	 V.is_cerradolote,
-																	 V.cerradolote_fechahoraregistro,
-																	 V.cerradolote_usuarioregistro,
-
-																	 V.guiaremitente_serie,
-																	 V.guiaremitente_numero,
-																	 V.guiatransportista_serie,
-																	 V.guiatransportista_numero
-
-																	 /*GR.cGuia_serie,
-																	 GR.cGuia_Numero,
-																	 GR.cGuia_Serie_Transportista,
-																	 GR.cGuia_Numero_Transportista*/
-
-															FROM despachos_primertramo_validaciondatos V
-																	 LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
-																	 INNER JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
-																	 INNER JOIN tbconfig_tipovehiculo TV ON T.id_tipovehiculo = TV.Id
-																	 INNER JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
-																	 LEFT JOIN tbconfig_zonaorigen ZO ON V.lote_id_zonaorigen = ZO.Id
-																	 LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
-																	 LEFT JOIN tbconfig_proveedoresmineros_concesion CCS ON V.lote_id_proveedorminero_concesion = CCS.Id
-																	 LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
-																	 LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
-																	 LEFT JOIN tbconfig_tipocarga TC ON V.lote_id_tipocarga = TC.Id
-																	 LEFT JOIN tbconfig_producto P ON V.lote_id_producto = P.Id
-																	 /*LEFT JOIN guia_remision_detalle GRD ON V.Id = GRD.id_despachos_primertramo_validaciondatos
-																	 LEFT JOIN guia_remision GR ON GRD.id_Guia_remision = GR.id_Guia_remision*/
-																	 LEFT JOIN consolidado_lotes_cierrecontable CRL ON V.Id = CRL.id_registro
-																		 AND CRL.id_tipoingreso = 1
-														 WHERE V.guiaremitente_serie IS NOT NULL";
+		WHERE
+			V.guiaremitente_serie IS NOT NULL 
+		";
 
 		if (strlen($arr_lotes) > 0) {
 			$q_validacion .= "   AND V.lote_cod_lote IN (" . $arr_lotes . ")";
@@ -24080,8 +24063,8 @@ switch ($_POST["accion"]) {
 			$q_validacion .= "   AND DATE(V.lote_pesoinicial_fechahoraregistro) BETWEEN '" . $fecha_inicio . "' AND '" . $fecha_fin . "'";
 		}
 
-		$q_validacion .= " ORDER BY V.lote_cod_lote, /*V.lote_num_ticket, V.lote_ticket_orden*/ V.guias_ticketbalanza";
-
+		$q_validacion .= " ORDER BY V.lote_cod_lote, V.guias_ticketbalanza";
+		saveLog(["xd" => $q_validacion]);
 		if ($res_validacion = mysqli_query($enlace, $q_validacion)) {
 			if (mysqli_num_rows($res_validacion) > 0) {
 				$estado = 1;
@@ -25780,6 +25763,7 @@ switch ($_POST["accion"]) {
 
 		$q_datos .= " GROUP BY V.lote_cod_lote, EM.nombres, PM.razon_social, ME.descripcion, HC.cierre_prom, IFNULL(PL.nombre_comercial, PL.descripcion)";
 
+		saveLog(["xd" => $q_datos]);
 		if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			if (mysqli_num_rows($res_datos) > 0) {
 				$estado = 1;
@@ -32368,7 +32352,7 @@ switch ($_POST["accion"]) {
 
 					// Carga lista de Destino
 					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
-					$html .= '		<select id="val_2_' . $d . '" class="form-select select_datos" data-placeholder="Elija una opción..." style="text-align: left; font-size: 14px;" onchange="f_UpdateDatos(' . $d . ', 2)" ' . (($row_validacion["is_cerrado"] == 1 && ($row_validacion["despacho_id_modalidadenvio"] == 3 || $row_validacion["despacho_id_modalidadenvio"] == 4 || $row_validacion["despacho_id_modalidadenvio"] == 5 || $row_validacion["despacho_id_modalidadenvio"] == 6)) ? ((strlen($row_validacion["despacho_id_destinoplanta"]) > 0) ? 'disabled' : '') : (($row_validacion["is_cerrado"] == 1) ? 'disabled' : '')) . '>';
+					$html .= '		<select id="val_2_' . $d . '" class="form-select select_datos" data-placeholder="Elija una opción..." style="text-align: left; font-size: 14px;" onchange="f_UpdateDatos(' . $d . ', 2)" ' . (($row_validacion["is_cerrado"] == 1 && ($row_validacion["despacho_id_modalidadenvio"] == 3 || $row_validacion["despacho_id_modalidadenvio"] == 4 || $row_validacion["despacho_id_modalidadenvio"] == 5 || $row_validacion["despacho_id_modalidadenvio"] == 6)) ? ((strlen($row_validacion["despacho_id_destinoplanta"]) > 0) ? '  ' : '') : (($row_validacion["is_cerrado"] == 1) ? ' ' : '')) . '>';
 
 					$id_row = $row_validacion["despacho_id_destinoplanta"];
 
@@ -33661,23 +33645,28 @@ switch ($_POST["accion"]) {
 		$html = '';
 
 		// Query para obtener el tipo: "Recepción de Mineral"
-		$q_validacion = "	SELECT V.despacho_id_modalidadenvio,
-																	 IFNULL(V.despacho_id_destinoplanta, 0) AS despacho_id_destinoplanta,
-																	 V.lote_id_proveedorminero,
-																	 ME.descripcion AS MODALIDAD_ENVIO,
-																	 IFNULL(D.descripcion, '** PENDIENTE **') AS DESTINO,
-																	 PM.documento AS PROVEEDORMINERO_RUC,
-																	 PM.razon_social AS PROVEEDOR_MINERO,
-																	 V.balanza_placa,
-																	 V.lote_id_proveedorminero_concesion
-															FROM despachos_primertramo_validaciondatos V
-																	 INNER JOIN tbconfig_modalidadenvio ME ON V.despacho_id_modalidadenvio = ME.Id
-																	 LEFT JOIN tbconfig_plantas D ON V.despacho_id_destinoplanta = D.Id
-																	 INNER JOIN tb_clientes PM ON V.lote_id_proveedorminero = PM.Id
-																	 INNER JOIN catalogolotes L ON V.lote_cod_lote = L.ccod_Lote
-														 WHERE V.is_cerrado = 1
-															 -- AND YEAR(balanza_fechahoraregistro) >= 2024
-															 AND YEAR(L.tFechaInicialBalanza) >= 2024";
+		$q_validacion = "
+		SELECT
+			V.despacho_id_modalidadenvio,
+			IFNULL(V.despacho_id_destinoplanta, 0) AS despacho_id_destinoplanta,
+			V.lote_id_proveedorminero,
+			ME.descripcion AS MODALIDAD_ENVIO,
+			IFNULL(D.descripcion, '** PENDIENTE **') AS DESTINO,
+			PM.documento AS PROVEEDORMINERO_RUC,
+			PM.razon_social AS PROVEEDOR_MINERO,
+			V.balanza_placa,
+			V.lote_id_proveedorminero_concesion
+		FROM despachos_primertramo_validaciondatos V
+
+		LEFT JOIN tbconfig_modalidadenvio ME ON V.despacho_id_modalidadenvio = ME.Id
+		LEFT JOIN tbconfig_plantas D ON V.despacho_id_destinoplanta = D.Id
+		LEFT JOIN tb_clientes PM ON V.lote_id_proveedorminero = PM.Id
+		LEFT JOIN catalogolotes L ON V.lote_cod_lote = L.ccod_Lote
+
+		WHERE
+			V.is_cerrado = 1
+			AND YEAR(L.tFechaInicialBalanza) >= 2024 
+		";
 
 		if (strlen($arr_lotes) > 0) {
 			$q_validacion .= "   AND V.lote_cod_lote IN (" . $arr_lotes . ")";
@@ -33705,6 +33694,7 @@ switch ($_POST["accion"]) {
 		$q_validacion .= " GROUP BY V.despacho_id_modalidadenvio, V.despacho_id_destinoplanta, V.lote_id_proveedorminero, V.balanza_placa, V.lote_id_proveedorminero_concesion";
 		// $q_validacion .= " ORDER BY V.lote_cod_lote, V.lote_num_ticket";
 
+		saveLog(["yes" => $q_validacion]);
 		if ($res_validacion = mysqli_query($enlace, $q_validacion)) {
 			if (mysqli_num_rows($res_validacion) > 0) {
 				$estado = 1;

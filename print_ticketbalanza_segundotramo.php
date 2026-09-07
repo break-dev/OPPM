@@ -370,19 +370,19 @@ SELECT
     COALESCE(usu.usu_usuario, CL.fechahora_usuario)  as usuario_registro
 
 FROM despachos_segundotramo_programacion_detalle PD
-INNER JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
-INNER JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
-INNER JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad AND PD.cod_lote = DL.cod_lote
-INNER JOIN transporte UN ON U.id_unidad = UN.id_transporte
+LEFT JOIN despachos_segundotramo_programacion P ON PD.id_programacion = P.Id
+LEFT JOIN despachos_segundotramo_distribucion_unidades U ON P.Id = U.id_programacion
+LEFT JOIN despachos_segundotramo_distribucion_lotes DL ON U.Id = DL.id_distribucionunidad AND PD.cod_lote = DL.cod_lote
+LEFT JOIN transporte UN ON U.id_unidad = UN.id_transporte
 LEFT JOIN transporte UN2 ON U.id_unidad2 = UN2.id_transporte
-INNER JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
-INNER JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
+LEFT JOIN tb_clientes TR ON UN.id_Transportista = TR.Id
+LEFT JOIN tbconfig_plantas PL ON PD.id_planta = PL.Id
 LEFT JOIN tbconfig_modalidadenvio ME ON PD.id_modalidadenvio = ME.Id
-INNER JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
-INNER JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
-INNER JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
-INNER JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
-INNER JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
+LEFT JOIN tbconfig_tipocarga TC ON DL.id_tipocarga = TC.Id
+LEFT JOIN tbconfig_tipovehiculo TV ON UN.id_tipovehiculo = TV.Id
+LEFT JOIN despachos_primertramo_validaciondatos V ON PD.cod_lote = V.lote_cod_lote
+LEFT JOIN tbconfig_conductores CH ON DL.guias_idchofer = CH.Id
+LEFT JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
 LEFT JOIN tbconfig_producto PR ON V.lote_id_producto = PR.Id
 LEFT JOIN tbconfig_tipomineral TM ON V.lote_id_tipomineral = TM.Id
 LEFT JOIN consolidado_lotes_cierrecontable CL ON DL.Id = CL.id_registro AND CL.id_tipoingreso = 2
@@ -428,48 +428,27 @@ if ($res_datos = mysqli_query($enlace, $q_datos)) {
 				$peso_neto = abs($peso_neto - ($row_datos["COMPLEMENTO_PESODISTRIBUIDO2"] * 1000));
 			}
 
-			// Calcular pesos para comparar
-			$peso_a = $row_datos["peso_bruto"] * 1000;
-			$peso_b = $row_datos["peso_tara"] * 1000;
+			// Calcular pesos
+			$peso_bruto = $row_datos["peso_bruto"] * 1000;
+			$peso_tara = $row_datos["peso_tara"] * 1000;
 
 			if ($row_datos["TIENE_COMPLEMENTO"] == 1) {
-				$peso_b = ($row_datos["peso_bruto"] * 1000) - $peso_neto;
+				$peso_tara = ($row_datos["peso_bruto"] * 1000) - $peso_neto;
 			}
 
 			if ($row_datos["is_complemento"] == 1) {
-				$peso_b = $row_datos["COMPLEMENTO_TARA"];
+				$peso_tara = $row_datos["COMPLEMENTO_TARA"];
 			}
 
-			// Comparación: el menor va arriba (peso_inicial) y el mayor abajo (peso_final)
-			if ($peso_a == 0 && $peso_b > 0) {
-				$peso_inicial = $peso_b;
-				$pesoinicial_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-				$peso_final = 0;
-				$pesofinal_fechahora = '';
-			} else if ($peso_b == 0 && $peso_a > 0) {
-				$peso_inicial = $peso_a;
-				$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
-				$peso_final = 0;
-				$pesofinal_fechahora = '';
-			} else {
-				if ($peso_a < $peso_b) {
-					$peso_inicial = $peso_a;
-					$pesoinicial_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
-					$peso_final = $peso_b;
-					$pesofinal_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-				} else {
-					$peso_inicial = $peso_b;
-					$pesoinicial_fechahora = $row_datos["peso_tara_fechahoraregistro"];
-					$peso_final = $peso_a;
-					$pesofinal_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
-				}
-			}
+			// Siempre: TARA primero, luego BRUTO
+			$pesotara_fechahora = $row_datos["peso_tara_fechahoraregistro"];
+			$pesobruto_fechahora = $row_datos["peso_bruto_fechahoraregistro"];
 
-			if (empty($pesoinicial_fechahora)) {
-				$pesoinicial_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
+			if (empty($pesotara_fechahora)) {
+				$pesotara_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
 			}
-			if ($peso_final > 0 && empty($pesofinal_fechahora)) {
-				$pesofinal_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
+			if (empty($pesobruto_fechahora)) {
+				$pesobruto_fechahora = $row_datos["FECHA_INGRESOBALANZA"];
 			}
 
 			// Genera el Código QR
@@ -698,36 +677,36 @@ $html .= '			<div class="row" style="text-align: center;">
 											<table style="width: 100%;">
 												<tr>
 													<td style="width: 50%;">
-														<label style="font-family: AgencyFBb;">PESO INICIAL: </label>
+														<label style="font-family: AgencyFBb;">PESO TARA: </label>
 													</td>
 
 													<td style="width: 50%; text-align: right;">
-														<label>' . number_format($peso_inicial, 0, '.', ',') . ' Kg</label>
+														<label>' . ($peso_tara == 0 ? '---' : number_format($peso_tara, 0, '.', ',') . ' Kg') . '</label>
 													</td>
 												</tr>
 
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . $pesoinicial_fechahora . '
+															Fecha: ' . (empty($pesotara_fechahora) ? '---' : $pesotara_fechahora) . '
 														</div>
 													</td>
 												</tr>
 
 												<tr>
 													<td style="width: 50%;">
-														<label style="font-family: AgencyFBb;">PESO FINAL: </label>
+														<label style="font-family: AgencyFBb;">PESO BRUTO: </label>
 													</td>
 
 													<td style="width: 50%; text-align: right;">
-														<label>' . ($peso_final == 0 ? '---' : number_format($peso_final, 0, '.', ',') . ' Kg') . '</label>
+														<label>' . ($peso_bruto == 0 ? '---' : number_format($peso_bruto, 0, '.', ',') . ' Kg') . '</label>
 													</td>
 												</tr>
 
 												<tr>
 													<td colspan="2">
 														<div style="margin-top: -10px; font-size: 13px;">
-															Fecha: ' . (empty($pesofinal_fechahora) ? '---' : $pesofinal_fechahora) . '
+															Fecha: ' . (empty($pesobruto_fechahora) ? '---' : $pesobruto_fechahora) . '
 														</div>
 													</td>
 												</tr>
