@@ -1246,6 +1246,45 @@ function f_Eliminar_DespachoSegundoTramo_DistribucionLote($enlace, $id_distribuc
 }
 
 // Proceso utilizado para actualizar la Presentación de Cargas en los despachos, donde la mayor distribución siempre es Granel.
+function f_Update_DespachoSegundoTramo_PresentacionCarga_this($enlace, $id_distribucionunidad)
+{
+// 1. Obtiene el Id del Item con el mayor peso distribuido
+    $id_registro = 0;
+
+    $q_idregistro = "SELECT Id
+                       FROM despachos_segundotramo_distribucion_lotes
+                      WHERE id_distribucionunidad = " . (int)$id_distribucionunidad . "
+                   ORDER BY peso_distribuido DESC
+                      LIMIT 1";
+
+    if ($res_idregistro = mysqli_query($enlace, $q_idregistro)) {
+        if ($row_idregistro = mysqli_fetch_assoc($res_idregistro)) {
+            $id_registro = (int)$row_idregistro["Id"];
+        }
+    }
+
+    // Si no encontró ningún registro, no hay nada que actualizar
+    if ($id_registro === 0) {
+        return;
+    }
+
+    // 2. Actualiza la carga principal a Granel (id_tipocarga = 1)
+    $q_update_principal = "UPDATE despachos_segundotramo_distribucion_lotes 
+                              SET id_tipocarga = 1 
+                            WHERE Id = " . $id_registro;
+
+    if (mysqli_query($enlace, $q_update_principal)) {
+        // 3. Actualiza el resto de los lotes de la unidad (id_tipocarga = 5) sin subconsulta
+        $q_update_resto = "UPDATE despachos_segundotramo_distribucion_lotes 
+                              SET id_tipocarga = 5 
+                            WHERE id_distribucionunidad = " . (int)$id_distribucionunidad . " 
+                              AND Id <> " . $id_registro;
+
+        mysqli_query($enlace, $q_update_resto);
+    }
+}
+
+// Proceso utilizado para actualizar la Presentación de Cargas en los despachos, donde la mayor distribución siempre es Granel.
 function f_Update_DespachoSegundoTramo_PresentacionCarga($enlace, $id_distribucionunidad)
 {
 	// 1. Obtiene el Id del Item con el mayor peso distribuido
@@ -28390,7 +28429,7 @@ switch ($_POST["accion"]) {
 		}
 
 		// Actualiza Presentación de la carga
-		f_Update_DespachoSegundoTramo_PresentacionCarga($enlace, $id_distribucionunidad);
+		f_Update_DespachoSegundoTramo_PresentacionCarga_this($enlace, $id_distribucionunidad);
 
 		echo json_encode(array('estado' => $estado));
 
