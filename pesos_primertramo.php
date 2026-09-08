@@ -1930,7 +1930,7 @@
             }, "json");
       }
 
-      function f_GestionLotes(_id_ingreso, _id_lote, _placa, _is_pesoinicial, _peso_inicial, _pesoinicial_observacion, _cod_aum, _num_ticket, balanza_id_tipocarga, balanza_id_zonaorigen, balanza_id_proveedorminero, balanza_id_encargadomuestra, balanza_id_producto, balanza_id_tipomineral, balanza_observacion){
+      function f_GestionLotes(_id_ingreso, _id_lote, _placa, _is_pesoinicial, _peso_inicial, _pesoinicial_observacion, _cod_aum, _num_ticket, balanza_id_tipocarga, balanza_id_zonaorigen, balanza_id_proveedorminero, balanza_id_encargadomuestra, balanza_id_producto, balanza_id_tipomineral, balanza_observacion, _serie_guia_remitente, _numero_guia_remitente, _serie_guia_transportista, _numero_guia_transportista){
         // MAX: Resetear contador de listas AJAX cargadas para esta apertura del modal
           _listasCargadas = 0;
 
@@ -2036,13 +2036,27 @@
             $("#div_pesoneto").hide();
           }
           else{
-            $("#div_guias_seccion").hide();
-            $("#chk_registrar_guias").prop('checked', false);
-            $("#div_guias_inputs").hide();
-            $("#guia_remitente_serie").val('');
-            $("#guia_remitente_numero").val('');
-            $("#guia_transportista_serie").val('');
-            $("#guia_transportista_numero").val('');
+            // Guías: mostrar la sección y pre-llenar si vienen datos (registradas previamente
+            // durante el peso inicial). Si hay al menos un valor, se marca el checkbox y se
+            // despliegan los inputs para permitir editarlas.
+            $("#div_guias_seccion").show();
+            $("#guia_remitente_serie").val(_serie_guia_remitente || '');
+            $("#guia_remitente_numero").val(_numero_guia_remitente || '');
+            $("#guia_transportista_serie").val(_serie_guia_transportista || '');
+            $("#guia_transportista_numero").val(_numero_guia_transportista || '');
+
+            var _has_guias = ((_serie_guia_remitente || '').toString().trim().length > 0) ||
+                             ((_numero_guia_remitente || '').toString().trim().length > 0) ||
+                             ((_serie_guia_transportista || '').toString().trim().length > 0) ||
+                             ((_numero_guia_transportista || '').toString().trim().length > 0);
+
+            if (_has_guias) {
+              $("#chk_registrar_guias").prop('checked', true);
+              $("#div_guias_inputs").show();
+            } else {
+              $("#chk_registrar_guias").prop('checked', false);
+              $("#div_guias_inputs").hide();
+            }
 
             $(".show_pesoinicial").prop('disabled', true);
             $("#lote_pesobruto").val(_peso_inicial);
@@ -3013,24 +3027,6 @@
 
               return;
             }
-
-            // Validar Guías si se activa la opción
-            if ($("#chk_registrar_guias").prop('checked')) {
-              var s_rem = $("#guia_remitente_serie").val().trim();
-              var n_rem = $("#guia_remitente_numero").val().trim();
-              var s_tra = $("#guia_transportista_serie").val().trim();
-              var n_tra = $("#guia_transportista_numero").val().trim();
-
-              if (s_rem.length == 0 || n_rem.length == 0 || s_tra.length == 0 || n_tra.length == 0) {
-                alert("Debe completar todos los datos de las guías si activa el registro.");
-                return;
-              }
-
-              _serie_guia_remitente = s_rem;
-              _numero_guia_remitente = n_rem;
-              _serie_guia_transportista = s_tra;
-              _numero_guia_transportista = n_tra;
-            }
           }
           else{
             if (_peso_final <= 0){
@@ -3038,6 +3034,24 @@
 
               return;
             }
+          }
+
+          // Validar Guías si se activa la opción (aplica tanto a peso inicial como a peso final)
+          if ($("#chk_registrar_guias").prop('checked')) {
+            var s_rem = $("#guia_remitente_serie").val().trim();
+            var n_rem = $("#guia_remitente_numero").val().trim();
+            var s_tra = $("#guia_transportista_serie").val().trim();
+            var n_tra = $("#guia_transportista_numero").val().trim();
+
+            if (s_rem.length == 0 || n_rem.length == 0 || s_tra.length == 0 || n_tra.length == 0) {
+              alert("Debe completar todos los datos de las guías si activa el registro.");
+              return;
+            }
+
+            _serie_guia_remitente = s_rem;
+            _numero_guia_remitente = n_rem;
+            _serie_guia_transportista = s_tra;
+            _numero_guia_transportista = n_tra;
           }
 
 

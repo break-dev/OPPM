@@ -402,10 +402,12 @@ SELECT
     V.is_cerrado,
     V.cerrado_fechahoraregistro,
     V.cerrado_usuarioregistro,
+    
     COALESCE(V.guiaremitente_serie, lot.serie_guia_remitente) as guiaremitente_serie,
-    COALESCE(V.guiaremitente_serie, lot.numero_guia_remitente) as guiaremitente_numero,
-    COALESCE(V.guiaremitente_serie, lot.serie_guia_transportista) as guiatransportista_serie,
-    COALESCE(V.guiaremitente_serie, lot.numero_guia_transportista) as guiatransportista_numero,
+    COALESCE(V.guiaremitente_numero, lot.numero_guia_remitente) as guiaremitente_numero,
+    COALESCE(V.guiatransportista_serie, lot.serie_guia_transportista) as guiatransportista_serie,
+    COALESCE(V.guiatransportista_numero, lot.numero_guia_transportista) as guiatransportista_numero,
+
     COALESCE(usu.usu_usuario, tk.usuario_registro) as usuario_registro
 FROM
     despachos_primertramo_validaciondatos V

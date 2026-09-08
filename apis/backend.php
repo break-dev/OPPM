@@ -85,7 +85,7 @@ function saveLog($datos)
 }
 
 // Obtiene los datos de Balanza pendientes por importar a la tabla de Validación de Datos del Primer Tramo de Despachos.
-function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $usuario_registro)
+function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $usuario_registro, $is_pesoinicial)
 {
 	// --------------------------------------------------------
 	// REGISTRAR O BUSCAR EN LA TABLA CORRESPONDIENTE A LA DE GUIAS
@@ -106,6 +106,53 @@ function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $u
 		}
 	}
 
+	$q_select = "
+	SELECT
+		B.id_controlIngresoVehiculo,
+		B.id_tipoingresounidad,
+		B.placa,
+		B.placa2,
+		B.id_transportista,
+		B.id_tipovehiculo,
+		B.id_choferes,
+		CONCAT(B.dFechaIngreso,' ',B.dhoraingresoPlanta) AS FECHAHORA_INGRESOPLANTA,
+		L.id_CatalogoLotes,
+		L.ccod_Lote,
+		L.nNro_ticketsBalanza,
+		L.balanza_id_tipocarga,
+		L.balanza_id_zonaorigen,
+		L.balanza_id_proveedorminero,
+		L.balanza_id_encargadomuestra,
+		L.balanza_id_producto,
+		L.balanza_id_tipomineral,
+		L.nPeso_InicialBalanza,
+		CONCAT(L.tFechaInicialBalanza,' ',L.tHoraInicialBalanza) AS PESOINICIAL_FECHAHORA,
+		L.nPeso_FinalBalanza,
+		CONCAT(L.dFechaFinalBalanza,' ',L.tHoraFinalBalanza) AS PESOFINAL_FECHAHORA,
+		L.nPeso_InicialBalanza AS nPeso_BrutoOrigen,
+		L.nPeso_FinalBalanza AS nPeso_TaraOrigen,
+		(L.nPeso_InicialBalanza - L.nPeso_FinalBalanza),
+		(L.nPeso_InicialBalanza - L.nPeso_FinalBalanza) AS PENDIENTE_ENVIO,
+		1,
+		U.nCapacidad,
+		U.nTara,
+		U.id_marca,
+		L.balanza_observacion,
+		NULL
+	FROM
+		catalogolotes L
+
+	INNER JOIN controlingresovehiculo B ON L.id_controlIngresoVehiculo = B.id_controlIngresoVehiculo
+	LEFT JOIN tb_clientes C ON L.balanza_id_proveedorminero = C.Id AND C.cod_clientecondicion = 1
+	LEFT JOIN transporte U ON B.placa = U.cplaca
+
+	WHERE
+		1=1
+	";
+
+	$q_select .= " AND L.id_CatalogoLotes = $id_lote_a_cerrar";
+
+	// INSERT: registra el lote si aún no existe
 	$q_insert = "
 	INSERT INTO despachos_primertramo_validaciondatos(
 		balanza_id_controlingresovehiculo,
@@ -140,53 +187,44 @@ function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $u
 		despacho_observacion,
 		despacho_id_modalidadenvio
 	)
+	" . $q_select;
+
+	// UPDATE: re-sincroniza los datos propios del lote si ya existe el registro
+	$q_update_existente = "
+	UPDATE despachos_primertramo_validaciondatos des
+	INNER JOIN ( " . $q_select . " ) AS src ON src.id_CatalogoLotes = des.lote_id_lote
+	SET des.balanza_id_controlingresovehiculo      = src.id_controlIngresoVehiculo,
+		des.balanza_id_tipoingresounidad           = src.id_tipoingresounidad,
+		des.balanza_placa                          = src.placa,
+		des.balanza_placa2                         = src.placa2,
+		des.balanza_id_transportista               = src.id_transportista,
+		des.balanza_id_tipovehiculo                = src.id_tipovehiculo,
+		des.balanza_id_chofer                      = src.id_choferes,
+		des.balanza_fechahoraregistro              = src.FECHAHORA_INGRESOPLANTA,
+		des.lote_id_lote                           = src.id_CatalogoLotes,
+		des.lote_cod_lote                          = src.ccod_Lote,
+		des.lote_num_ticket                        = src.nNro_ticketsBalanza,
+		des.lote_id_tipocarga                      = src.balanza_id_tipocarga,
+		des.lote_id_zonaorigen                     = src.balanza_id_zonaorigen,
+		des.lote_id_proveedorminero                = src.balanza_id_proveedorminero,
+		des.lote_id_encargadomuestra               = src.balanza_id_encargadomuestra,
+		des.lote_id_producto                       = src.balanza_id_producto,
+		des.lote_id_tipomineral                    = src.balanza_id_tipomineral,
+		des.lote_peso_inicial                      = src.nPeso_InicialBalanza,
+		des.lote_pesoinicial_fechahoraregistro     = src.PESOINICIAL_FECHAHORA,
+		des.lote_peso_final                        = src.nPeso_FinalBalanza,
+		des.lote_pesofinal_fechahoraregistro       = src.PESOFINAL_FECHAHORA,
+		des.lote_peso_bruto                        = src.nPeso_BrutoOrigen,
+		des.lote_peso_tara                         = src.nPeso_TaraOrigen,
+		des.lote_peso_neto                         = (src.nPeso_InicialBalanza - src.nPeso_FinalBalanza),
+		des.lote_peso_pendiente_envio              = (src.nPeso_InicialBalanza - src.nPeso_FinalBalanza),
+		des.despacho_id_estadolote                 = 1,
+		des.unidad_capacidad                       = src.nCapacidad,
+		des.unidad_tara                            = src.nTara,
+		des.unidad_idmarca                         = src.id_marca,
+		des.despacho_observacion                   = src.balanza_observacion
+	WHERE des.Id = " . $id_despacho_validacion . "
 	";
-
-	$q_insert .= "
-	SELECT
-		B.id_controlIngresoVehiculo,
-		B.id_tipoingresounidad,
-		B.placa,
-		B.placa2,
-		B.id_transportista,
-		B.id_tipovehiculo,
-		B.id_choferes,
-		CONCAT(B.dFechaIngreso,' ',B.dhoraingresoPlanta) AS FECHAHORA_INGRESOPLANTA,
-		L.id_CatalogoLotes,
-		L.ccod_Lote,
-		L.nNro_ticketsBalanza,
-		L.balanza_id_tipocarga,
-		L.balanza_id_zonaorigen,
-		L.balanza_id_proveedorminero,
-		L.balanza_id_encargadomuestra,
-		L.balanza_id_producto,
-		L.balanza_id_tipomineral,
-		L.nPeso_InicialBalanza,
-		CONCAT(L.tFechaInicialBalanza,' ',L.tHoraInicialBalanza) AS PESOINICIAL_FECHAHORA,
-		L.nPeso_FinalBalanza,
-		CONCAT(L.dFechaFinalBalanza,' ',L.tHoraFinalBalanza) AS PESOFINAL_FECHAHORA,
-		L.nPeso_InicialBalanza,
-		L.nPeso_FinalBalanza,
-		(L.nPeso_InicialBalanza - L.nPeso_FinalBalanza),
-		(L.nPeso_InicialBalanza - L.nPeso_FinalBalanza) AS PENDIENTE_ENVIO,
-		1,
-		U.nCapacidad,
-		U.nTara,
-		U.id_marca,
-		L.balanza_observacion,
-		NULL
-	FROM
-		catalogolotes L
-		
-	INNER JOIN controlingresovehiculo B ON L.id_controlIngresoVehiculo = B.id_controlIngresoVehiculo
-	LEFT JOIN tb_clientes C ON L.balanza_id_proveedorminero = C.Id AND C.cod_clientecondicion = 1
-	LEFT JOIN transporte U ON B.placa = U.cplaca
-
-	WHERE
-		1=1
-	";
-
-	$q_insert .= " AND L.id_CatalogoLotes = $id_lote_a_cerrar";
 
 	// Solo registramos si el lote no esta registrado
 	if ($id_despacho_validacion == 0) {
@@ -198,21 +236,28 @@ function cerrar_lote_desde_primer_tramo($enlace, $id_lote_a_cerrar, $g_fecha, $u
 		}
 
 		$id_despacho_validacion = mysqli_insert_id($enlace);
+	} else {
+		// Si el lote ya está registrado, re-sincronizamos sus datos propios desde el maestro de lotes
+		mysqli_query($enlace, $q_update_existente);
 	}
 
 	// --------------------------------------------------------
 	// CERRAR EL LOTE PARA GENERAR EL TICKET CONTABLE
 	// --------------------------------------------------------
 
-	// Grabando cierre
+	// Grabando cierre (solo si aún no está cerrada; si ya lo está no se actualiza para no alterar fecha/hora/usuario originales)
 	$q_update = "UPDATE despachos_primertramo_validaciondatos";
 	$q_update .= "  SET is_cerradolote = 1, is_cerrado = 1, ";
 	$q_update .= "			cerradolote_fechahoraregistro = '" . $g_fecha . "', ";
 	$q_update .= "			cerradolote_usuarioregistro = '" . $usuario_registro . "'";
 	$q_update .= " WHERE Id = " . $id_despacho_validacion . "";
+	$q_update .= "   AND (is_cerradolote = 0 OR is_cerradolote IS NULL)";
 	mysqli_query($enlace, $q_update);
 
-	// Migrando Lotes cerrados a la tabla de datos Consolidados - el "1" representa el primer tramo
+	// Migrando Lotes cerrados a la tabla de datos Consolidados - el "1" representa el primer tramo.
+	// Se ejecuta en AMBOS casos (peso inicial y peso final): la función f_MigrarLotes_CierreContable
+	// detecta si el registro ya existe en consolidado_lotes_cierrecontable y hace UPDATE; si no, INSERT.
+	// Así se mantiene la coherencia de datos cuando al registrar el peso final se modifican datos del lote.
 	f_MigrarLotes_CierreContable($enlace, 1, $id_despacho_validacion, $g_fecha, $usuario_registro);
 
 
@@ -1915,83 +1960,67 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 
 	while ($l < count($arr_idregistros)) {
 		$skip_insert = false;
-        $q_datos = "
-        INSERT INTO consolidado_lotes_cierrecontable(
-            id_registro,
-            cod_lote,
-            lote_item,
-            id_tipoingreso,
-            fecha_ingresobalanza,
-            placa1,
-            placa2,
-            numguia_remitente,
-            numguia_transportista,
-            transportista_ruc,
-            transportista_razonsocial,
-            id_tipovehiculo,
-            conductor_licencia,
-            conductor_nombres,
-            id_tipocarga,
-            num_bigbag,
-            id_zonaorigen,
-            proveedorminero_ruc,
-            proveedorminero_razonsocial,
-            encargadomuestra_nombres,
-            remitente_ruc,
-            remitente_razonsocial,
-            id_producto,
-            id_tipomineral,
-            observacion,
-            fecha_pesoinicial,
-            fecha_pesofinal,
-            peso_bruto,
-            peso_tara,
-            peso_neto,
-            fechahora_registro,
-            fechahora_usuario
-        )
-        ";
+		$id_existente = 0;
+
+		// 1. Verificar si ya existe el registro en consolidado_lotes_cierrecontable
+		//    Esto aplica para AMBOS tramos (id_tipoingreso = 1 y 2) y evita duplicados al re-ejecutarse.
+		$q_exists = "SELECT Id
+								 FROM consolidado_lotes_cierrecontable
+								WHERE id_tipoingreso = " . $id_tipoingreso . "
+									AND id_registro = " . $arr_idregistros[$l];
+
+		if ($res_exists = mysqli_query($enlace, $q_exists)) {
+			if (mysqli_num_rows($res_exists) > 0) {
+				$row_exists = mysqli_fetch_array($res_exists);
+				$id_existente = $row_exists["Id"];
+			}
+		}
+
+		// 2. Construir el SELECT de los datos del lote según el tramo
+		//    Se reutiliza tanto para INSERT (cuando no existe) como para UPDATE (cuando ya existe).
+		$q_select_datos = "";
 
 		if ($id_tipoingreso == 1) {
-			$q_datos .= "SELECT V.Id,
-															V.lote_cod_lote,
-															V.lote_ticket_orden,
-															" . $id_tipoingreso . ",
-															DATE(V.lote_pesoinicial_fechahoraregistro) AS FECHA_INGRESOBALANZA,
-															V.balanza_placa,
-															V.balanza_placa2,
-															CONCAT(V.guiaremitente_serie, '-', V.guiaremitente_numero) AS GUIA_REMITENTE,
-															CONCAT(V.guiatransportista_serie, '-', V.guiatransportista_numero) AS GUIA_TRANSPORTISTA,
-															CL_T.documento AS TRANSPORTISTA_RUC,
-															UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
-															T.id_tipovehiculo,
-															CD.licencia_conducir AS CONDUCTOR_LICENCIA,
-															CD.nombres AS CONDUCTOR_NOMBRES,
-															V.lote_id_tipocarga,
-															NULL,
-															V.lote_id_zonaorigen,
-															CL.documento AS PROVEEDORMINERO_RUC,
-															UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
-															UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
-															NULL,
-															NULL,
-															V.lote_id_producto,
-															V.lote_id_tipomineral,
-															V.despacho_observacion,
-															V.lote_pesoinicial_fechahoraregistro,
-															V.lote_pesofinal_fechahoraregistro,
-															V.lote_peso_inicial AS lote_peso_bruto,
-															V.lote_peso_final AS lote_peso_tara,
-															V.lote_peso_neto,
-															'" . $g_fecha . "',
-															'" . $usuario_registro . "'
-												 FROM despachos_primertramo_validaciondatos V
-															LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
-															LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
-															LEFT JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
-															LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
-															LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
-												WHERE V.Id = " . $arr_idregistros[$l];
+			$q_select_datos = "
+			SELECT V.Id,
+							V.lote_cod_lote,
+							V.lote_ticket_orden,
+							" . $id_tipoingreso . ",
+							DATE(V.lote_pesoinicial_fechahoraregistro) AS FECHA_INGRESOBALANZA,
+							V.balanza_placa,
+							V.balanza_placa2,
+							CONCAT(V.guiaremitente_serie, '-', V.guiaremitente_numero) AS GUIA_REMITENTE,
+							CONCAT(V.guiatransportista_serie, '-', V.guiatransportista_numero) AS GUIA_TRANSPORTISTA,
+							CL_T.documento AS TRANSPORTISTA_RUC,
+							UPPER(CL_T.razon_social) AS TRANSPORTISTA_RAZONSOCIAL,
+							T.id_tipovehiculo,
+							CD.licencia_conducir AS CONDUCTOR_LICENCIA,
+							CD.nombres AS CONDUCTOR_NOMBRES,
+							V.lote_id_tipocarga,
+							NULL,
+							V.lote_id_zonaorigen,
+							CL.documento AS PROVEEDORMINERO_RUC,
+							UPPER(CL.razon_social) AS PROVEEDORMINERO_RAZONSOCIAL,
+							UPPER(EM.nombres) AS ENCARGADO_MUESTRA,
+							NULL,
+							NULL,
+							V.lote_id_producto,
+							V.lote_id_tipomineral,
+							V.despacho_observacion,
+							V.lote_pesoinicial_fechahoraregistro,
+							V.lote_pesofinal_fechahoraregistro,
+							V.lote_peso_inicial AS lote_peso_bruto,
+							V.lote_peso_final AS lote_peso_tara,
+							V.lote_peso_neto,
+							'" . $g_fecha . "',
+							'" . $usuario_registro . "'
+				 FROM despachos_primertramo_validaciondatos V
+							LEFT JOIN transporte T ON V.balanza_placa = T.cplaca
+							LEFT JOIN tb_clientes CL_T ON T.id_Transportista = CL_T.Id
+							LEFT JOIN tbconfig_conductores CD ON V.guias_idchofer = CD.Id
+							LEFT JOIN tb_clientes CL ON V.lote_id_proveedorminero = CL.Id
+							LEFT JOIN tbconfig_encargadosmuestra EM ON V.lote_id_encargadomuestra = EM.Id
+				WHERE V.Id = " . $arr_idregistros[$l];
 		} else {
 			$q_select_datos = "SELECT DISTINCT
 															DL.Id,
@@ -2057,143 +2086,176 @@ function f_MigrarLotes_CierreContable($enlace, $id_tipoingreso, $arr_idregistros
 															LEFT JOIN tbconfig_remitentessegundotramo RE ON DL.guias_iddestino = RE.id_destino
 															AND DL.guias_idmodalidadenvio = RE.id_modalidadenvio
 												WHERE DL.Id = " . $arr_idregistros[$l];
+		}
 
-			// Verificar si ya existe el registro en el consolidado para el segundo tramo
-			$q_exists = "SELECT Id FROM consolidado_lotes_cierrecontable WHERE id_tipoingreso = 2 AND id_registro = " . $arr_idregistros[$l];
-			$res_exists = mysqli_query($enlace, $q_exists);
-			if ($res_exists && mysqli_num_rows($res_exists) > 0) {
-				$row_exists = mysqli_fetch_array($res_exists);
-				$id_existente = $row_exists["Id"];
+		// 3. Si ya existe el registro, se re-sincroniza (UPDATE).
+		//    Si no existe, se inserta por primera vez (INSERT) y se genera el correlativo del ticket.
+		if ($id_existente > 0) {
 
-				$res_select = mysqli_query($enlace, $q_select_datos);
-				if ($res_select && $row = mysqli_fetch_array($res_select)) {
-					$q_update = "UPDATE consolidado_lotes_cierrecontable SET
-									cod_lote = " . ($row[1] !== null ? "'" . mysqli_real_escape_string($enlace, $row[1]) . "'" : 'NULL') . ",
-									lote_item = " . ($row[2] !== null ? $row[2] : 'NULL') . ",
-									fecha_ingresobalanza = " . ($row[4] !== null ? "'" . $row[4] . "'" : 'NULL') . ",
-									placa1 = " . ($row[5] !== null ? "'" . mysqli_real_escape_string($enlace, $row[5]) . "'" : 'NULL') . ",
-									placa2 = " . ($row[6] !== null ? "'" . mysqli_real_escape_string($enlace, $row[6]) . "'" : 'NULL') . ",
-									numguia_remitente = " . ($row[7] !== null ? "'" . mysqli_real_escape_string($enlace, $row[7]) . "'" : 'NULL') . ",
-									numguia_transportista = " . ($row[8] !== null ? "'" . mysqli_real_escape_string($enlace, $row[8]) . "'" : 'NULL') . ",
-									transportista_ruc = " . ($row[9] !== null ? "'" . mysqli_real_escape_string($enlace, $row[9]) . "'" : 'NULL') . ",
-									transportista_razonsocial = " . ($row[10] !== null ? "'" . mysqli_real_escape_string($enlace, $row[10]) . "'" : 'NULL') . ",
-									id_tipovehiculo = " . ($row[11] !== null ? $row[11] : 'NULL') . ",
-									conductor_licencia = " . ($row[12] !== null ? "'" . mysqli_real_escape_string($enlace, $row[12]) . "'" : 'NULL') . ",
-									conductor_nombres = " . ($row[13] !== null ? "'" . mysqli_real_escape_string($enlace, $row[13]) . "'" : 'NULL') . ",
-									id_tipocarga = " . ($row[14] !== null ? $row[14] : 'NULL') . ",
-									num_bigbag = " . ($row[15] !== null ? $row[15] : 'NULL') . ",
-									remitente_ruc = " . ($row[20] !== null ? "'" . mysqli_real_escape_string($enlace, $row[20]) . "'" : 'NULL') . ",
-									remitente_razonsocial = " . ($row[21] !== null ? "'" . mysqli_real_escape_string($enlace, $row[21]) . "'" : 'NULL') . ",
-									id_producto = " . ($row[22] !== null ? $row[22] : 'NULL') . ",
-									id_tipomineral = " . ($row[23] !== null ? $row[23] : 'NULL') . ",
-									observacion = " . ($row[24] !== null ? "'" . mysqli_real_escape_string($enlace, $row[24]) . "'" : 'NULL') . ",
-									fecha_pesoinicial = " . ($row[25] !== null ? "'" . $row[25] . "'" : 'NULL') . ",
-									fecha_pesofinal = " . ($row[26] !== null ? "'" . $row[26] . "'" : 'NULL') . ",
-									peso_bruto = " . ($row[27] !== null ? $row[27] : 'NULL') . ",
-									peso_tara = " . ($row[28] !== null ? $row[28] : 'NULL') . ",
-									peso_neto = " . ($row[29] !== null ? $row[29] : 'NULL') . ",
-									fechahora_registro = '" . $g_fecha . "',
-									fechahora_usuario = '" . $usuario_registro . "'
-								 WHERE Id = " . $id_existente;
-					mysqli_query($enlace, $q_update);
-				}
-				$skip_insert = true;
+			$res_select = mysqli_query($enlace, $q_select_datos);
+			if ($res_select && $row = mysqli_fetch_array($res_select)) {
+				$q_update = "UPDATE consolidado_lotes_cierrecontable SET
+								cod_lote = " . ($row[1] !== null ? "'" . mysqli_real_escape_string($enlace, $row[1]) . "'" : 'NULL') . ",
+								lote_item = " . ($row[2] !== null ? $row[2] : 'NULL') . ",
+								fecha_ingresobalanza = " . ($row[4] !== null ? "'" . $row[4] . "'" : 'NULL') . ",
+								placa1 = " . ($row[5] !== null ? "'" . mysqli_real_escape_string($enlace, $row[5]) . "'" : 'NULL') . ",
+								placa2 = " . ($row[6] !== null ? "'" . mysqli_real_escape_string($enlace, $row[6]) . "'" : 'NULL') . ",
+								numguia_remitente = " . ($row[7] !== null ? "'" . mysqli_real_escape_string($enlace, $row[7]) . "'" : 'NULL') . ",
+								numguia_transportista = " . ($row[8] !== null ? "'" . mysqli_real_escape_string($enlace, $row[8]) . "'" : 'NULL') . ",
+								transportista_ruc = " . ($row[9] !== null ? "'" . mysqli_real_escape_string($enlace, $row[9]) . "'" : 'NULL') . ",
+								transportista_razonsocial = " . ($row[10] !== null ? "'" . mysqli_real_escape_string($enlace, $row[10]) . "'" : 'NULL') . ",
+								id_tipovehiculo = " . ($row[11] !== null ? $row[11] : 'NULL') . ",
+								conductor_licencia = " . ($row[12] !== null ? "'" . mysqli_real_escape_string($enlace, $row[12]) . "'" : 'NULL') . ",
+								conductor_nombres = " . ($row[13] !== null ? "'" . mysqli_real_escape_string($enlace, $row[13]) . "'" : 'NULL') . ",
+								id_tipocarga = " . ($row[14] !== null ? $row[14] : 'NULL') . ",
+								num_bigbag = " . ($row[15] !== null ? $row[15] : 'NULL') . ",
+								remitente_ruc = " . ($row[20] !== null ? "'" . mysqli_real_escape_string($enlace, $row[20]) . "'" : 'NULL') . ",
+								remitente_razonsocial = " . ($row[21] !== null ? "'" . mysqli_real_escape_string($enlace, $row[21]) . "'" : 'NULL') . ",
+								id_producto = " . ($row[22] !== null ? $row[22] : 'NULL') . ",
+								id_tipomineral = " . ($row[23] !== null ? $row[23] : 'NULL') . ",
+								observacion = " . ($row[24] !== null ? "'" . mysqli_real_escape_string($enlace, $row[24]) . "'" : 'NULL') . ",
+								fecha_pesoinicial = " . ($row[25] !== null ? "'" . $row[25] . "'" : 'NULL') . ",
+								fecha_pesofinal = " . ($row[26] !== null ? "'" . $row[26] . "'" : 'NULL') . ",
+								peso_bruto = " . ($row[27] !== null ? $row[27] : 'NULL') . ",
+								peso_tara = " . ($row[28] !== null ? $row[28] : 'NULL') . ",
+								peso_neto = " . ($row[29] !== null ? $row[29] : 'NULL') . ",
+								fechahora_registro = '" . $g_fecha . "',
+								fechahora_usuario = '" . $usuario_registro . "'
+							 WHERE Id = " . $id_existente;
+				mysqli_query($enlace, $q_update);
+			}
+			$skip_insert = true;
+			$idregistro_new = 0;
+		} else {
+
+			$q_insert = "INSERT INTO consolidado_lotes_cierrecontable(
+							id_registro,
+							cod_lote,
+							lote_item,
+							id_tipoingreso,
+							fecha_ingresobalanza,
+							placa1,
+							placa2,
+							numguia_remitente,
+							numguia_transportista,
+							transportista_ruc,
+							transportista_razonsocial,
+							id_tipovehiculo,
+							conductor_licencia,
+							conductor_nombres,
+							id_tipocarga,
+							num_bigbag,
+							id_zonaorigen,
+							proveedorminero_ruc,
+							proveedorminero_razonsocial,
+							encargadomuestra_nombres,
+							remitente_ruc,
+							remitente_razonsocial,
+							id_producto,
+							id_tipomineral,
+							observacion,
+							fecha_pesoinicial,
+							fecha_pesofinal,
+							peso_bruto,
+							peso_tara,
+							peso_neto,
+							fechahora_registro,
+							fechahora_usuario
+						) " . $q_select_datos;
+
+			if ($res_datos = mysqli_query($enlace, $q_insert)) {
+				$idregistro_new = mysqli_insert_id($enlace);
 			} else {
-				$q_datos .= $q_select_datos;
+				$idregistro_new = 0;
 			}
 		}
 
-		if (!$skip_insert) {
-			// saveLog(["query" => $q_datos]);
-			if ($res_datos = mysqli_query($enlace, $q_datos)) {
-				$idregistro_new = mysqli_insert_id($enlace);
+		if (!$skip_insert && $idregistro_new > 0) {
+			// Genera los Número de Ticket del Cierre Contable (Primer y Segundo Tramo)
+			// 1. Obtiene le Fecha del nuevo registro
+			$fecha_x = '';
 
-				// Genera los Número de Ticket del Cierre Contable (Primer y Segundo Tramo)
-				// 1. Obtiene le Fecha del nuevo registro
-				$fecha_x = '';
+			$q_fecha = "SELECT fecha_ingresobalanza
+														FROM consolidado_lotes_cierrecontable
+													 WHERE Id = " . $idregistro_new;
 
-				$q_fecha = "SELECT fecha_ingresobalanza
-															FROM consolidado_lotes_cierrecontable
-														 WHERE Id = " . $idregistro_new;
-
-				if ($res_fecha = mysqli_query($enlace, $q_fecha)) {
-					if (mysqli_num_rows($res_fecha) > 0) {
-						while ($row_fecha = mysqli_fetch_array($res_fecha)) {
-							$fecha_x = $row_fecha["fecha_ingresobalanza"];
-						}
+			if ($res_fecha = mysqli_query($enlace, $q_fecha)) {
+				if (mysqli_num_rows($res_fecha) > 0) {
+					while ($row_fecha = mysqli_fetch_array($res_fecha)) {
+						$fecha_x = $row_fecha["fecha_ingresobalanza"];
 					}
 				}
+			}
 
-				// 2. Obtiene el N° de Ticket asignado a los registros anteriores
-				$c = 1;
-				$correlativo_x = 0; // Para identificar el Correlativo de cada registro
-				$continuar = 1; // Ayuda a saber cuando continuar
+			// 2. Obtiene el N° de Ticket asignado a los registros anteriores
+			$c = 1;
+			$correlativo_x = 0; // Para identificar el Correlativo de cada registro
+			$continuar = 1; // Ayuda a saber cuando continuar
 
-				$q_numticket = "SELECT num_ticketbalanza
-																	FROM consolidado_lotes_cierrecontable
-																 WHERE fecha_ingresobalanza = '" . $fecha_x . "'
-																	 AND Id <> " . $idregistro_new . "
-																ORDER BY num_ticketbalanza";
+			$q_numticket = "SELECT num_ticketbalanza
+																FROM consolidado_lotes_cierrecontable
+															 WHERE fecha_ingresobalanza = '" . $fecha_x . "'
+																 AND Id <> " . $idregistro_new . "
+															ORDER BY num_ticketbalanza";
 
-				if ($res_numticket = mysqli_query($enlace, $q_numticket)) {
-					if (mysqli_num_rows($res_numticket) > 0) {
-						while ($row_numticket = mysqli_fetch_array($res_numticket)) {
-							// 3. Identifica el Correlativo de cada registro
+			if ($res_numticket = mysqli_query($enlace, $q_numticket)) {
+				if (mysqli_num_rows($res_numticket) > 0) {
+					while ($row_numticket = mysqli_fetch_array($res_numticket)) {
+						// 3. Identifica el Correlativo de cada registro
 
-							$correlativo_x = explode('-', $row_numticket["num_ticketbalanza"])[1];
-							$correlativo_x = intval($correlativo_x);
+						$correlativo_x = explode('-', $row_numticket["num_ticketbalanza"])[1];
+						$correlativo_x = intval($correlativo_x);
 
-							// 4. Crea un Array para buscar el Nuevo Correlativo
-							while ($c < 10000) {
+						// 4. Crea un Array para buscar el Nuevo Correlativo
+						while ($c < 10000) {
 
-								if ($c == $correlativo_x) {
-									$c++;
-
-									break;
-								}
-
-								if ($c != $correlativo_x) {
-									// Setea Prefijo
-									$prefijo = explode('-', $fecha_x);
-									$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
-
-									// Setea Correlativo
-									$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
-
-									// Actualiza Correlativo
-									$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
-									$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
-									$q_update .= " WHERE Id = " . $idregistro_new;
-
-									if ($q_update = mysqli_query($enlace, $q_update)) {
-										$continuar = 0;
-
-										break 2;
-									}
-								}
-
+							if ($c == $correlativo_x) {
 								$c++;
+
+								break;
 							}
+
+							if ($c != $correlativo_x) {
+								// Setea Prefijo
+								$prefijo = explode('-', $fecha_x);
+								$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
+
+								// Setea Correlativo
+								$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
+
+								// Actualiza Correlativo
+								$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
+								$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
+								$q_update .= " WHERE Id = " . $idregistro_new;
+
+								if ($q_update = mysqli_query($enlace, $q_update)) {
+									$continuar = 0;
+
+									break 2;
+								}
+							}
+
+							$c++;
 						}
 					}
 				}
+			}
 
-				// Asigna el Correlativo
-				if ($continuar == 1) {
-					// Setea Prefijo
-					$prefijo = explode('-', $fecha_x);
-					$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
+			// Asigna el Correlativo
+			if ($continuar == 1) {
+				// Setea Prefijo
+				$prefijo = explode('-', $fecha_x);
+				$prefijo = $prefijo[2] . $prefijo[1] . substr($prefijo[0], 2);
 
-					// Setea Correlativo
-					$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
+				// Setea Correlativo
+				$correlativo = $prefijo . '-' . str_pad($c, 3, '0', STR_PAD_LEFT);
 
-					// Actualiza Correlativo
-					$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
-					$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
-					$q_update .= " WHERE Id = " . $idregistro_new;
+				// Actualiza Correlativo
+				$q_update = "UPDATE consolidado_lotes_cierrecontable SET";
+				$q_update .= "   num_ticketbalanza = '" . $correlativo . "'";
+				$q_update .= " WHERE Id = " . $idregistro_new;
 
-					if ($q_update = mysqli_query($enlace, $q_update)) {
-					}
+				if ($q_update = mysqli_query($enlace, $q_update)) {
 				}
 			}
 		}
@@ -19323,72 +19385,80 @@ switch ($_POST["accion"]) {
 		$html = '';
 		$num_lotes = 0;
 
-		$q_ingreso = "SELECT I.id_controlIngresoVehiculo,
-														 CONCAT(I.dFechaIngreso, ' ', I.dhoraingresoPlanta) AS FECHAHORA_REGISTRO,
-														 I.id_tipoingresounidad,
-														 I.id_tipoingresounidad_checked,
-														 IU.descripcion AS TIPO_INGRESOUNIDAD,
-														 I.placa,
-														 I.placa_checked,
-														 I.placa2,
-														 I.placa2_checked,
-														 I.id_transportista,
-														 I.id_transportista_checked,
-														 T.razon_social AS TRANSPORTISTA,
-														 T.documento,
-														 I.id_tipovehiculo,
-														 I.id_tipovehiculo_checked,
-														 TV.descripcion AS TIPO_VEHICULO,
-														 TV.tiene_carreta,
-														 I.id_choferes,
-														 I.id_choferes_checked,
-														 CD.dni_licencia,
-														 CD.nombres AS CONDUCTOR,
-														 I.id_tipocarga,
-														 I.id_tipocarga_checked,
-														 TC.descripcion AS TIPO_CARGA,
-														 I.id_zonaorigen,
-														 I.id_zonaorigen_checked,
-														 ZO.descripcion AS ZONA_ORIGEN,
-														 I.id_proveedorminero,
-														 I.id_proveedorminero_checked,
-														 PM.razon_social AS PROVEEDOR_MINERO,
-														 I.id_encargadomuestra,
-														 I.id_encargadomuestra_checked,
-														 EM.documento AS ENCARGADO_DOCUMENTO,
-														 EM.nombres AS ENCARGADO_MUESTRA,
-														 I.id_producto,
-														 I.id_producto_checked,
-														 P.descripcion AS PRODUCTO,
-														 I.id_tipomineral,
-														 I.id_tipomineral_checked,
-														 TM.descripcion AS TIPO_MINERAL,
-														 I.cNotas,
-														 I.cNotas_checked,
-														 I.dFechaIngreso,
-														 I.dhoraingresoPlanta,
-														 I.is_finvalidacion,
+		$q_ingreso = "
+		SELECT
+			I.id_controlIngresoVehiculo,
+			CONCAT(I.dFechaIngreso,' ',I.dhoraingresoPlanta) AS FECHAHORA_REGISTRO,
+			I.id_tipoingresounidad,
+			I.id_tipoingresounidad_checked,
+			IU.descripcion AS TIPO_INGRESOUNIDAD,
+			I.placa,
+			I.placa_checked,
+			I.placa2,
+			I.placa2_checked,
+			I.id_transportista,
+			I.id_transportista_checked,
+			T.razon_social AS TRANSPORTISTA,
+			T.documento,
+			I.id_tipovehiculo,
+			I.id_tipovehiculo_checked,
+			TV.descripcion AS TIPO_VEHICULO,
+			TV.tiene_carreta,
+			I.id_choferes,
+			I.id_choferes_checked,
+			CD.dni_licencia,
+			CD.nombres AS CONDUCTOR,
+			I.id_tipocarga,
+			I.id_tipocarga_checked,
+			TC.descripcion AS TIPO_CARGA,
+			I.id_zonaorigen,
+			I.id_zonaorigen_checked,
+			ZO.descripcion AS ZONA_ORIGEN,
+			I.id_proveedorminero,
+			I.id_proveedorminero_checked,
+			PM.razon_social AS PROVEEDOR_MINERO,
+			I.id_encargadomuestra,
+			I.id_encargadomuestra_checked,
+			EM.documento AS ENCARGADO_DOCUMENTO,
+			EM.nombres AS ENCARGADO_MUESTRA,
+			I.id_producto,
+			I.id_producto_checked,
+			P.descripcion AS PRODUCTO,
+			I.id_tipomineral,
+			I.id_tipomineral_checked,
+			TM.descripcion AS TIPO_MINERAL,
+			I.cNotas,
+			I.cNotas_checked,
+			I.dFechaIngreso,
+			I.dhoraingresoPlanta,
+			I.is_finvalidacion,
+			(
+				SELECT COUNT(L.id_CatalogoLotes)
+				FROM catalogolotes L
+				WHERE L.id_controlIngresoVehiculo = I.id_controlIngresoVehiculo
+			) AS NUM_LOTES
+		FROM controlingresovehiculo I
 
-														 (SELECT COUNT(L.id_CatalogoLotes)
-																FROM catalogolotes L
-															 WHERE L.id_controlIngresoVehiculo = I.id_controlIngresoVehiculo) AS NUM_LOTES
-												FROM controlingresovehiculo I
-														 INNER JOIN tbconfig_tipoingresounidades IU ON I.id_tipoingresounidad = IU.Id
-														 LEFT JOIN tb_clientes T ON I.id_transportista = T.Id
-														 LEFT JOIN tbconfig_tipovehiculo TV ON I.id_tipovehiculo = TV.Id
-														 LEFT JOIN tbconfig_conductores CD ON I.id_choferes = CD.Id
-														 LEFT JOIN tbconfig_tipocarga TC ON I.id_tipocarga = TC.Id
-														 LEFT JOIN tbconfig_zonaorigen ZO ON I.id_zonaorigen = ZO.Id
-														 LEFT JOIN tb_clientes PM ON I.id_proveedorminero = PM.Id
-														 LEFT JOIN tbconfig_encargadosmuestra EM ON I.id_encargadomuestra = EM.Id
-														 LEFT JOIN tbconfig_producto P ON I.id_producto = P.Id
-														 LEFT JOIN tbconfig_tipomineral TM ON I.id_tipomineral = TM.Id
-											 WHERE IU.balanza_primertramo = 1
-												 AND I.is_iniciovalidacion = 1
-												 AND I.is_cierrevalidacion = 0
-												 AND I.is_loteaum = 0
-												 AND DATE(I.iniciovalidacion_fechahoraregistro) > '2023-07-04'
-											ORDER BY I.iniciovalidacion_fechahoraregistro";
+		INNER JOIN tbconfig_tipoingresounidades IU ON I.id_tipoingresounidad = IU.Id
+		LEFT JOIN tb_clientes T ON I.id_transportista = T.Id
+		LEFT JOIN tbconfig_tipovehiculo TV ON I.id_tipovehiculo = TV.Id
+		LEFT JOIN tbconfig_conductores CD ON I.id_choferes = CD.Id
+		LEFT JOIN tbconfig_tipocarga TC ON I.id_tipocarga = TC.Id
+		LEFT JOIN tbconfig_zonaorigen ZO ON I.id_zonaorigen = ZO.Id
+		LEFT JOIN tb_clientes PM ON I.id_proveedorminero = PM.Id
+		LEFT JOIN tbconfig_encargadosmuestra EM ON I.id_encargadomuestra = EM.Id
+		LEFT JOIN tbconfig_producto P ON I.id_producto = P.Id
+		LEFT JOIN tbconfig_tipomineral TM ON I.id_tipomineral = TM.Id
+
+		WHERE
+			IU.balanza_primertramo = 1 
+			AND I.is_iniciovalidacion = 1 
+			AND I.is_cierrevalidacion = 0 
+			AND I.is_loteaum = 0 
+			AND DATE(I.iniciovalidacion_fechahoraregistro) > '2023-07-04'
+
+		ORDER BY I.iniciovalidacion_fechahoraregistro
+		";
 
 		if ($res_ingreso = mysqli_query($enlace, $q_ingreso)) {
 			if (mysqli_num_rows($res_ingreso) > 0) {
@@ -19778,17 +19848,23 @@ switch ($_POST["accion"]) {
 							$l = 1;
 							$completos = 0;
 
-							$q_lotes = "SELECT MD5(id_CatalogoLotes) AS ID_MD5,
-																				 id_CatalogoLotes,
-																				 nNro_ticketsBalanza,
-																				 ccod_Lote,
-																				 tFechaInicialBalanza,
-																				 dFechaFinalBalanza,
-																				 nPeso_InicialBalanza,
-																				 nPeso_FinalBalanza
-																		FROM catalogolotes
-																	 WHERE id_controlIngresoVehiculo = " . $row_ingreso["id_controlIngresoVehiculo"] . "
-																	ORDER BY dFechaIngreso, tHora_Ingreso";
+							$q_lotes = "
+							SELECT
+								MD5(id_CatalogoLotes) AS ID_MD5,
+								id_CatalogoLotes,
+								nNro_ticketsBalanza,
+								ccod_Lote,
+								tFechaInicialBalanza,
+								dFechaFinalBalanza,
+								nPeso_InicialBalanza,
+								nPeso_FinalBalanza,
+								serie_guia_remitente,
+								numero_guia_remitente,
+								serie_guia_transportista,
+								numero_guia_transportista
+							FROM catalogolotes
+							WHERE id_controlIngresoVehiculo = " . $row_ingreso["id_controlIngresoVehiculo"] . "
+							ORDER BY dFechaIngreso, tHora_Ingreso";
 
 							if ($res_lotes = mysqli_query($enlace, $q_lotes)) {
 								if (mysqli_num_rows($res_lotes) > 0) {
@@ -20346,6 +20422,15 @@ switch ($_POST["accion"]) {
 			$q_save .= "nPesoPendienteEnvio = nPeso_InicialBalanza - " . $peso_final . ", ";
 			$q_save .= "nPesoTaraBalanza = " . $peso_final . ", ";
 			$q_save .= "nPesoNetoBalanza = nPeso_InicialBalanza - " . $peso_final . ", ";
+
+			// Guías: permitir que se registren/actualicen también al capturar el peso final
+			// (si el usuario las dejó vacías en el peso inicial y ahora las agrega, o si
+			// necesita corregir un valor previamente ingresado).
+			$q_save .= "serie_guia_remitente = " . ((strlen(trim($serie_guia_remitente)) == 0) ? 'NULL' : "'" . $serie_guia_remitente . "'") . ', ';
+			$q_save .= "numero_guia_remitente = " . ((strlen(trim($numero_guia_remitente)) == 0) ? 'NULL' : "'" . $numero_guia_remitente . "'") . ', ';
+			$q_save .= "serie_guia_transportista = " . ((strlen(trim($serie_guia_transportista)) == 0) ? 'NULL' : "'" . $serie_guia_transportista . "'") . ', ';
+			$q_save .= "numero_guia_transportista = " . ((strlen(trim($numero_guia_transportista)) == 0) ? 'NULL' : "'" . $numero_guia_transportista . "'") . ', ';
+
 			$q_save .= "id_UsuarioModificacion = " . $usuario_registro . ", ";
 			$q_save .= "dFechaModificacion = '" . $g_fecha . "'";
 			$q_save .= " WHERE id_CatalogoLotes = " . $id_lote;
@@ -20393,9 +20478,9 @@ switch ($_POST["accion"]) {
 			}
 
 			$id_md5 = "";
-			// SI SE REGISTRO EL PESO INICIAL, CERRARMOS EL LOTES AUTOMATICAMENTE
+			// CERRARMOS EL LOTE AUTOMATICAMENTE
+			$id_md5 = cerrar_lote_desde_primer_tramo($enlace, $id_lote, $g_fecha, $usuario_registro, $is_pesoinicial);
 			if ($is_pesoinicial == 1) {
-				$id_md5 = cerrar_lote_desde_primer_tramo($enlace, $id_lote, $g_fecha, $usuario_registro);
 				// saveLog(["con_cierre"->$id_md5]);
 			}
 			// Si se registro el peso final, solo obtenemos el md5 de la tabla de validacion
@@ -20449,6 +20534,10 @@ switch ($_POST["accion"]) {
 														 nPeso_FinalBalanza,
 														 pesofinal_observacion,
 														 placa,
+														 serie_guia_remitente,
+														 numero_guia_remitente,
+														 serie_guia_transportista,
+														 numero_guia_transportista,
 														 IFNULL(balanza_id_tipocarga, 0) AS balanza_id_tipocarga,
 														 IFNULL(balanza_id_zonaorigen, 0) AS balanza_id_zonaorigen,
 														 IFNULL(balanza_id_proveedorminero, 0) AS balanza_id_proveedorminero,
@@ -20505,7 +20594,7 @@ switch ($_POST["accion"]) {
 					$html .= '				<td style="text-align: center; border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; font-weight: bold;">';
 
 					if (strlen($row_ingreso["dFechaFinalBalanza"]) == 0) {
-						$html .= '					<button class="btn btn-primary" type="button" onclick="f_GestionLotes(' . $row_ingreso["id_controlIngresoVehiculo"] . ', ' . $row_ingreso["id_CatalogoLotes"] . ", '" . $row_ingreso["placa"] . "', 0, " . $row_ingreso["nPeso_InicialBalanza"] . ", '" . $row_ingreso["pesoinicial_observacion"] . "', '" . $row_ingreso["ccod_Lote"] . "', '" . $row_ingreso["nNro_ticketsBalanza"] . "', " . $row_ingreso["balanza_id_tipocarga"] . ', ' . $row_ingreso["balanza_id_zonaorigen"] . ', ' . $row_ingreso["balanza_id_proveedorminero"] . ', ' . $row_ingreso["balanza_id_encargadomuestra"] . ', ' . $row_ingreso["balanza_id_producto"] . ', ' . $row_ingreso["balanza_id_tipomineral"] . ", '" . str_replace("\n", '', $row_ingreso["balanza_observacion"]) . "'" . ');" style="color: #ffffff; width: 100%; font-size: 14px; height: 25px;">';
+						$html .= '					<button class="btn btn-primary" type="button" onclick="f_GestionLotes(' . $row_ingreso["id_controlIngresoVehiculo"] . ', ' . $row_ingreso["id_CatalogoLotes"] . ", '" . $row_ingreso["placa"] . "', 0, " . $row_ingreso["nPeso_InicialBalanza"] . ", '" . $row_ingreso["pesoinicial_observacion"] . "', '" . $row_ingreso["ccod_Lote"] . "', '" . $row_ingreso["nNro_ticketsBalanza"] . "', " . $row_ingreso["balanza_id_tipocarga"] . ', ' . $row_ingreso["balanza_id_zonaorigen"] . ', ' . $row_ingreso["balanza_id_proveedorminero"] . ', ' . $row_ingreso["balanza_id_encargadomuestra"] . ', ' . $row_ingreso["balanza_id_producto"] . ', ' . $row_ingreso["balanza_id_tipomineral"] . ", '" . str_replace("\n", '', $row_ingreso["balanza_observacion"]) . "', '" . str_replace("'", "\'", isset($row_ingreso["serie_guia_remitente"]) ? $row_ingreso["serie_guia_remitente"] : '') . "', '" . str_replace("'", "\'", isset($row_ingreso["numero_guia_remitente"]) ? $row_ingreso["numero_guia_remitente"] : '') . "', '" . str_replace("'", "\'", isset($row_ingreso["serie_guia_transportista"]) ? $row_ingreso["serie_guia_transportista"] : '') . "', '" . str_replace("'", "\'", isset($row_ingreso["numero_guia_transportista"]) ? $row_ingreso["numero_guia_transportista"] : '') . "'" . ');" style="color: #ffffff; width: 100%; font-size: 14px; height: 25px;">';
 						$html .= '						<label style="margin-top: -5px;">Peso Final</label>';
 						$html .= '					</button>';
 					} else {
