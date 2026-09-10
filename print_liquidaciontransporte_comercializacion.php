@@ -406,7 +406,7 @@ $html = '	<!DOCTYPE html>
 
 											<tr style="font-size: 11px;">
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center; width: 90px;">
-													Código
+													Código ' . $planta_ingreso .'
 												</td>
 
 												<td style="border: solid; border-width: 1px; border-color: #E6E9ED; vertical-align: middle; text-align: center; width: 80px;">
