@@ -714,6 +714,9 @@ if (!isset($_SESSION["Id"])) {
 				<input id="hd_cierreliquidacion_idmodalidadenvio" type="hidden">
 				<input id="hd_cierreliquidacion_idcoordinadortransporte" type="hidden">
 				<input id="hd_cierreliquidacion_isflete" type="hidden">
+				<input id="hd_cierreliquidacion_idtarifatransporte" type="hidden">
+				<input id="hd_cierreliquidacion_tarifa" type="hidden">
+				<input id="hd_cierreliquidacion_tarifaactual" type="hidden">
 
 				<div class="modal-footer" style="margin-top: -10px;">
 					<div id="wt_configuracionvehicular" class=""
@@ -727,6 +730,104 @@ if (!isset($_SESSION["Id"])) {
 					<button type="button" class="btn btn-primary wt_configuracionvehicular_button"
 						style="font-size: 14px;"
 						onclick="f_CierreLiquidacion(0, 0, 0, 0, 0, 0, 0, 1);">Confirmar</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+
+	<!-- Selección de Tarifa de Transporte -->
+	<div class="modal fade modal-dialog-scrollable" id="modal_TarifaTransporte" data-bs-backdrop="static"
+		data-bs-keyboard="false" tabindex="-1" aria-labelledby="modal_TarifaTransporteLabel" aria-hidden="true">
+		<div class="modal-dialog modal-md modal-dialog-centered">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h1 class="modal-title fs-5" id="modal_TarifaTransporteLabel">Selección de Tarifa de Transporte</h1>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body" style="padding: 20px;">
+					<div class="row" style="font-size: 14px;">
+						<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+							<label style="font-weight: bold;">Planta:</label>
+							<span id="span_tarifa_planta" style="margin-left: 5px;"></span>
+						</div>
+						<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+							<label style="font-weight: bold;">Coordinador de Transporte:</label>
+							<span id="span_tarifa_coordinador" style="margin-left: 5px;"></span>
+						</div>
+					</div>
+
+					<hr style="border-color: #D9D9D9; margin-top: 8px; margin-bottom: 10px;" />
+
+					<h6 style="font-size: 14px;">Tarifas disponibles</h6>
+
+					<div id="div_tarifa_lista" style="margin-top: 5px;">
+						<label style="font-style: italic; color: #888;">Cargando tarifas...</label>
+					</div>
+
+					<input id="hd_tarifa_id" type="hidden" />
+					<input id="hd_tarifa_monto" type="hidden" />
+
+					<div id="div_tarifa_nueva"
+						style="display: none; border: solid 1px #D9D9D9; border-radius: 7px; padding: 10px; margin-top: 10px; background-color: #FAFAFA;">
+						<h6 style="font-size: 14px; margin-bottom: 8px; font-weight: 700;">Registrar Nueva Tarifa</h6>
+
+						<div class="row" style="font-size: 13px;" hidden>
+							<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+								<label style="font-weight: bold;">Planta:</label>
+								<span id="span_nueva_planta" style="margin-left: 5px;"></span>
+								<input id="hd_nueva_idplanta" type="hidden" />
+							</div>
+							<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+								<label style="font-weight: bold;">Coordinador de Transporte:</label>
+								<span id="span_nueva_coordinador" style="margin-left: 5px;"></span>
+								<input id="hd_nueva_idcoordinador" type="hidden" />
+							</div>
+						</div>
+
+						<!-- <div class="row" style="font-size: 13px; margin-top: 4px; padding-inline: 4px;">
+							<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+								<label style="font-weight: bold;">Moneda:</label>
+								<span style="margin-left: 5px;">(Soles)</span>
+							</div>
+						</div> -->
+
+						<div class="row" style="font-size: 14px; margin-top: 6px; margin-left: 4px;">
+							<div class="col-md-6 col-sm-6 col-xs-12" style="padding: 2px;">
+								<label style="font-weight: bold;">Tarifa sin IGV (S/.):</label>
+								<input id="input_nueva_tarifa_sin_igv" type="number" step="0.01" min="0.01"
+									class="form-control" style="font-size: 14px; margin-top: 3px;" />
+							</div>
+						</div>
+
+						<div class="row" style="margin-top: 10px;margin-left: 4px;">
+							<div class="col-md-12 col-sm-12 col-xs-12" style="padding: 2px;">
+								<button type="button" class="btn btn-success" style="font-size: 14px;"
+									onclick="f_TarifaTransporte_GrabarNueva();">
+									<i class="bi bi-save"></i> Guardar Tarifa
+								</button>
+								<button type="button" class="btn btn-secondary" style="font-size: 14px; margin-left: 5px;"
+									onclick="f_TarifaTransporte_CancelarNueva();">Cancelar</button>
+
+								<div id="wt_tarifa_grabando" class=""
+									style="font-size: 13px; text-align: center; display: none; padding-top: 5px; margin-top: 8px;">
+									<img src="<?php echo $img_waiting ?>" style="width: 18px;">
+									<label style="font-style: italic;"> Grabando tarifa...</label>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="modal-footer" style="margin-top: -10px; padding: 12px 20px;">
+					<button type="button" class="btn btn-success" id="btn_tarifa_nueva" style="font-size: 14px;"
+						onclick="f_TarifaTransporte_MostrarNueva();">
+						<i class="bi bi-plus-circle"></i> Nueva Tarifa
+					</button>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="font-size: 14px;"
+						id="btn_tarifa_cerrar">Cerrar</button>
+					<button type="button" class="btn btn-primary" style="font-size: 14px;"
+						onclick="f_TarifaTransporte_Confirmar();">Aplicar Tarifa</button>
 				</div>
 			</div>
 		</div>
@@ -2630,8 +2731,23 @@ if (!isset($_SESSION["Id"])) {
 
 		}
 
-		function f_CierreLiquidacion(_item, _codigo_despacho, _guias_remitenteruc, _placa, _id_planta, _id_modalidadenvio, _is_flete, _is_confirmacionmodal, _id_coordinadortransporte) {
+		function f_CierreLiquidacion(_item, _codigo_despacho, _guias_remitenteruc, _placa, _id_planta, _id_modalidadenvio, _is_flete, _is_confirmacionmodal, _id_coordinadortransporte, _tarifa_actual) {
 			var id_material = 0;
+
+			// Setear siempre los hiddens (incluso en Lomas donde no se abre modal)
+			if (_is_confirmacionmodal != 1 && _is_confirmacionmodal != 2) {
+				$("#hd_cierreliquidacion_item").val(_item);
+				$("#hd_cierreliquidacion_codigodespacho").val(_codigo_despacho);
+				$("#hd_cierreliquidacion_remitenteruc").val(_guias_remitenteruc);
+				$("#hd_cierreliquidacion_placa").val(_placa);
+				$("#hd_cierreliquidacion_idplanta").val(_id_planta);
+				$("#hd_cierreliquidacion_idmodalidadenvio").val(_id_modalidadenvio);
+				$("#hd_cierreliquidacion_idcoordinadortransporte").val((_id_coordinadortransporte != null && _id_coordinadortransporte != undefined) ? _id_coordinadortransporte : '');
+				$("#hd_cierreliquidacion_isflete").val(_is_flete);
+				$("#hd_cierreliquidacion_idtarifatransporte").val('');
+				$("#hd_cierreliquidacion_tarifa").val('');
+				$("#hd_cierreliquidacion_tarifaactual").val((_tarifa_actual != null && _tarifa_actual != undefined) ? _tarifa_actual : '');
+			}
 
 			// Solo para Colibrí Venta Directa
 			if ((_id_planta == 3 && (_id_modalidadenvio == 1 || _id_modalidadenvio == 2)) || _is_confirmacionmodal == 1) {
@@ -2645,6 +2761,7 @@ if (!isset($_SESSION["Id"])) {
 					$("#hd_cierreliquidacion_idmodalidadenvio").val(_id_modalidadenvio);
 					$("#hd_cierreliquidacion_idcoordinadortransporte").val(_id_coordinadortransporte);
 					$("#hd_cierreliquidacion_isflete").val(_is_flete);
+					$("#hd_cierreliquidacion_tarifaactual").val((_tarifa_actual != null && _tarifa_actual != undefined) ? _tarifa_actual : '');
 
 					$("#lista_materiales").val('');
 					$("#lista_materiales").trigger('change');
@@ -2675,19 +2792,59 @@ if (!isset($_SESSION["Id"])) {
 					_id_modalidadenvio = $("#hd_cierreliquidacion_idmodalidadenvio").val();
 					_id_coordinadortransporte = $("#hd_cierreliquidacion_idcoordinadortransporte").val();
 					_is_flete = $("#hd_cierreliquidacion_isflete").val();
+					_tarifa_actual = $("#hd_cierreliquidacion_tarifaactual").val();
 				}
 			}
 
-			if (_is_confirmacionmodal != 1) {
-				if (_is_flete == 0) {
-					if (!confirm("¿Está seguro de Generar la Liquidación?")) {
-						return;
-					}
+			// Si es Lomas (Planta 4), la tarifa se ingresa en línea edit_tarifa_ — no abre modal de tarifas
+			// Para el resto, abre el modal de selección de tarifa (excepto si la tarifa ya fue confirmada)
+			if (_id_planta != 4 && _is_confirmacionmodal != 2) {
+				// (re)abrir modal de selección de tarifa
+				$("#hd_cierreliquidacion_item").val(_item);
+				$("#hd_cierreliquidacion_codigodespacho").val(_codigo_despacho);
+				$("#hd_cierreliquidacion_remitenteruc").val(_guias_remitenteruc);
+				$("#hd_cierreliquidacion_placa").val(_placa);
+				$("#hd_cierreliquidacion_idplanta").val(_id_planta);
+				$("#hd_cierreliquidacion_idmodalidadenvio").val(_id_modalidadenvio);
+				$("#hd_cierreliquidacion_idcoordinadortransporte").val(_id_coordinadortransporte);
+				$("#hd_cierreliquidacion_isflete").val(_is_flete);
+				$("#hd_cierreliquidacion_idtarifatransporte").val('');
+				$("#hd_cierreliquidacion_tarifa").val('');
+
+				// Reset modal de tarifa
+				$("#hd_tarifa_id").val('');
+				$("#hd_tarifa_monto").val('');
+				$("#div_tarifa_nueva").hide();
+				$("#input_nueva_tarifa_sin_igv").val('');
+
+				// Cargar lista de tarifas, pasando la tarifa actual para auto-seleccionar coincidencia
+				var tarifa_actual_num = (_tarifa_actual != null && _tarifa_actual != undefined && _tarifa_actual !== '') ? parseFloat(_tarifa_actual) : 0;
+				f_LoadTarifasTransporte(_id_planta, _id_coordinadortransporte, tarifa_actual_num);
+
+				f_OpenModal('modal_TarifaTransporte');
+
+				return;
+			}
+
+			// _is_confirmacionmodal == 2: tarifa ya fue confirmada
+			_item = $("#hd_cierreliquidacion_item").val();
+			_codigo_despacho = $("#hd_cierreliquidacion_codigodespacho").val();
+			_guias_remitenteruc = $("#hd_cierreliquidacion_remitenteruc").val();
+			_placa = $("#hd_cierreliquidacion_placa").val();
+			_id_planta = $("#hd_cierreliquidacion_idplanta").val();
+			_id_modalidadenvio = $("#hd_cierreliquidacion_idmodalidadenvio").val();
+			_id_coordinadortransporte = $("#hd_cierreliquidacion_idcoordinadortransporte").val();
+			_is_flete = $("#hd_cierreliquidacion_isflete").val();
+			_id_tarifatransporte = $("#hd_cierreliquidacion_idtarifatransporte").val();
+
+			if (_is_flete == 0) {
+				if (!confirm("¿Está seguro de Generar la Liquidación?")) {
+					return;
 				}
-				else {
-					if (!confirm("¿Está seguro de Confirmar el Flete?")) {
-						return;
-					}
+			}
+			else {
+				if (!confirm("¿Está seguro de Confirmar el Flete?")) {
+					return;
 				}
 			}
 
@@ -2715,35 +2872,237 @@ if (!isset($_SESSION["Id"])) {
 			}
 
 			// Creando cierre
-			$.post("apis/backend.php", { accion: "cierre_LiquidacionTransporte", codigo_despacho: _codigo_despacho, ruc_remitente: _guias_remitenteruc, placa: _placa, tarifa: tarifa, id_material: id_material, id_planta: _id_planta, id_coordinadortransporte: _id_coordinadortransporte },
+			$.post("apis/backend.php", { accion: "cierre_LiquidacionTransporte", codigo_despacho: _codigo_despacho, ruc_remitente: _guias_remitenteruc, placa: _placa, tarifa: tarifa, id_tarifatransporte: _id_tarifatransporte, id_material: id_material, id_planta: _id_planta, id_coordinadortransporte: _id_coordinadortransporte },
 				function (data) {
-					if (data.estado == 1) {
-						// Seteando campos
-						$("#td_cierre_1_" + _item).html('<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' + _item + ', ' + data.id_cierre + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', ' + _id_coordinadortransporte + ')"><u> Revertir </u></label>');
-
-						$("#td_cierre_2_" + _item).html(data.fechahora_registro + '<br>' + data.usuario_registro);
-
-						if (_is_flete == 0) {
-							$("#td_cierre_3_" + _item).html('<img src="images/informe_ensayos.png" class="rounded" style="width: 30px; cursor: pointer;" onclick="f_PrintLiquidacionTransporte(' + "'" + data.id_cierre_md5 + "', " + _id_planta + ', ' + _id_modalidadenvio + ')">');
-						}
-						else {
-							$("#td_cierre_3_" + _item).html('');
-						}
-
-						// Revierte el campo de Tarifa para Lomas
-						if (_id_planta == 4) {
-							$("#edit_tarifa_" + _item).prop('disabled', true);
-						}
-
+					// Cerrar modales primero para que no queden atascados si algo falla despues
+					try {
 						f_cerrarModal('modal_CierreLiquidacion');
+						f_cerrarModal('modal_TarifaTransporte');
+					} catch (e) {
+						console.error("Error cerrando modales:", e);
+					}
+
+					if (data && data.estado == 1) {
+						// Actualizar visualmente la columna de Precio x Tonelada y Total Base
+						try {
+							var tarifa_aplicada = parseFloat(data.tarifa);
+							if (!isFinite(tarifa_aplicada)) {
+								tarifa_aplicada = 0;
+							}
+
+							var moneda_abv = (data.moneda_abv != null && data.moneda_abv !== undefined) ? data.moneda_abv.toString().trim() : '';
+
+							if (tarifa_aplicada > 0 && _id_planta != 4) {
+								// Actualizar Precio x Tonelada
+								if ($("#lbl_preciotonelada_" + _item).length > 0) {
+									$("#lbl_preciotonelada_" + _item).text(moneda_abv + ' ' + tarifa_aplicada.toFixed(2));
+								}
+
+								// Recalcular y actualizar Total Base = TMH_TOTAL × tarifa_aplicada
+								var tmh_texto = $("#td_tmh_" + _item).text().replace(/,/g, '');
+								var tmh_total = parseFloat(tmh_texto);
+								if (!isFinite(tmh_total)) {
+									tmh_total = 0;
+								}
+
+								var total_base = tmh_total * tarifa_aplicada;
+
+								if ($("#td_totalbase_" + _item).length > 0) {
+									$("#td_totalbase_" + _item).text(total_base.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+								}
+							}
+						} catch (e) {
+							console.error("Error actualizando celdas de tarifa:", e);
+						}
+
+						// Seteando campos
+						try {
+							$("#td_cierre_1_" + _item).html('<label style="font-style: italic; color: #F23030; cursor: pointer;" onclick="f_Reabrir(' + _item + ', ' + data.id_cierre + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', ' + _id_coordinadortransporte + ')"><u> Revertir </u></label>');
+
+							$("#td_cierre_2_" + _item).html((data.fechahora_registro || '') + '<br>' + (data.usuario_registro || ''));
+
+							if (_is_flete == 0) {
+								$("#td_cierre_3_" + _item).html('<img src="images/informe_ensayos.png" class="rounded" style="width: 30px; cursor: pointer;" onclick="f_PrintLiquidacionTransporte(' + "'" + data.id_cierre_md5 + "', " + _id_planta + ', ' + _id_modalidadenvio + ')">');
+							}
+							else {
+								$("#td_cierre_3_" + _item).html('');
+							}
+
+							// Revierte el campo de Tarifa para Lomas
+							if (_id_planta == 4) {
+								$("#edit_tarifa_" + _item).prop('disabled', true);
+							}
+						} catch (e) {
+							console.error("Error seteando columnas de cierre:", e);
+						}
 					}
 					else {
 						alert("Ocurrió un error al momento de realizar el Cierre de Análisis.");
 					}
 
-					f_LoadingCierre(0);
+					try {
+						f_LoadingCierre(0);
+					} catch (e) {
+						console.error("Error en f_LoadingCierre:", e);
+					}
 
 				}, "json");
+		}
+
+		function f_LoadTarifasTransporte(_id_planta, _id_coordinadortransporte, _tarifa_actual) {
+			$("#div_tarifa_lista").html('<label style="font-style: italic; color: #888;">Cargando tarifas...</label>');
+			$("#hd_tarifa_id").val('');
+			$("#hd_tarifa_monto").val('');
+
+			_tarifa_actual = (typeof _tarifa_actual === 'number' && !isNaN(_tarifa_actual) && _tarifa_actual > 0) ? _tarifa_actual : 0;
+
+			$.post("apis/backend.php", { accion: "get_TarifasTransporte_ListaPorPlantaCoordinador", id_planta: _id_planta, id_coordinadortransporte: _id_coordinadortransporte },
+				function (data) {
+					$("#span_tarifa_planta").text((data.planta_descripcion || ''));
+					$("#span_tarifa_coordinador").text((data.coordinador_descripcion || ''));
+					$("#span_nueva_planta").text((data.planta_descripcion || ''));
+					$("#span_nueva_coordinador").text((data.coordinador_descripcion || ''));
+					$("#hd_nueva_idplanta").val(_id_planta);
+					$("#hd_nueva_idcoordinador").val(_id_coordinadortransporte);
+
+					if (data.estado == 1 && data.res.length > 0) {
+						// Determinar el id a auto-seleccionar:
+						// 1) Si hay una tarifa que coincide con la actual -> esa
+						// 2) Si solo hay una -> la unica
+						// 3) Si hay varias sin coincidencia -> la primera
+						var id_seleccionado = 0;
+						var monto_seleccionado = 0;
+						var index_coincidencia = -1;
+
+						$.each(data.res, function (key, val) {
+							var m = parseFloat(val.tarifa_sin_igv);
+							if (_tarifa_actual > 0 && Math.abs(m - _tarifa_actual) < 0.01 && index_coincidencia === -1) {
+								index_coincidencia = key;
+							}
+						});
+
+						if (index_coincidencia >= 0) {
+							id_seleccionado = data.res[index_coincidencia].Id;
+							monto_seleccionado = parseFloat(data.res[index_coincidencia].tarifa_sin_igv).toFixed(2);
+						}
+						else if (data.res.length == 1) {
+							id_seleccionado = data.res[0].Id;
+							monto_seleccionado = parseFloat(data.res[0].tarifa_sin_igv).toFixed(2);
+						}
+
+						var _html = '';
+						var i = 0;
+
+						$.each(data.res, function (key, val) {
+							i++;
+
+							var checked = (parseInt(val.Id) === parseInt(id_seleccionado)) ? ' checked' : '';
+							var monto = parseFloat(val.tarifa_sin_igv).toFixed(2);
+							var abv = (val.MONEDA_ABV || '').toString().trim();
+							var fec = (val.fechahora_registro || '').toString().trim();
+							var usu = (val.usuario_registro || '').toString().trim();
+							var registro_texto = 'Registrado: ' + fec;
+
+							_html += '<label for="radio_tarifa_' + val.Id + '" style="display: flex; align-items: center; gap: 10px; border: solid 1px #E6E9ED; border-radius: 5px; padding: 8px 12px; margin-bottom: 5px; cursor: pointer; font-size: 14px; font-weight: normal;">';
+							_html += '  <input class="radio_tarifa" type="radio" name="radio_tarifa" id="radio_tarifa_' + val.Id + '" value="' + val.Id + '" data-monto="' + monto + '" data-abv="' + abv + '" style="margin: 0; flex-shrink: 0;"' + checked + '>';
+							_html += '  <span><b>Tarifa: ' + abv + ' ' + monto + '</b>';
+							_html += '    <span style="color: #888; margin-left: 10px; font-size: 14px;">' + registro_texto + '</span>';
+							_html += '  </span>';
+							_html += '</label>';
+						});
+
+						$("#div_tarifa_lista").html(_html);
+
+						// Setea el hidden con la selección por defecto
+						$("#hd_tarifa_id").val(id_seleccionado);
+						$("#hd_tarifa_monto").val(monto_seleccionado);
+
+						// Evento change para radios
+						$(".radio_tarifa").on('change', function () {
+							if ($(this).is(':checked')) {
+								$("#hd_tarifa_id").val($(this).val());
+								$("#hd_tarifa_monto").val($(this).data('monto'));
+							}
+						});
+					}
+					else {
+						$("#div_tarifa_lista").html('<label style="font-style: italic; color: #888;">No hay tarifas registradas para esta Planta y Coordinador de Transporte. Use el botón "+ Nueva Tarifa" para registrar una.</label>');
+					}
+				}, "json");
+		}
+
+		function f_TarifaTransporte_MostrarNueva() {
+			$("#div_tarifa_nueva").show();
+			$("#input_nueva_tarifa_sin_igv").focus();
+		}
+
+		function f_TarifaTransporte_CancelarNueva() {
+			$("#div_tarifa_nueva").hide();
+			$("#input_nueva_tarifa_sin_igv").val('');
+		}
+
+		function f_TarifaTransporte_GrabarNueva() {
+			var id_planta = $("#hd_nueva_idplanta").val();
+			var id_coordinadortransporte = $("#hd_nueva_idcoordinador").val();
+			var tarifa_sin_igv = $("#input_nueva_tarifa_sin_igv").val();
+
+			if (tarifa_sin_igv == null || tarifa_sin_igv.length == 0) {
+				alert("Debe ingresar la Tarifa.");
+
+				return;
+			}
+
+			if (parseFloat(tarifa_sin_igv) <= 0) {
+				alert("La Tarifa ingresada no puede ser CERO.");
+
+				return;
+			}
+
+			$("#wt_tarifa_grabando").show();
+
+			$.post("apis/backend.php", { accion: "grabar_TarifaTransporte", id_planta: id_planta, id_coordinadortransporte: id_coordinadortransporte, tarifa_sin_igv: tarifa_sin_igv },
+				function (data) {
+					$("#wt_tarifa_grabando").hide();
+
+				if (data.estado == 1) {
+					// Recargar lista (sin auto-seleccionar por coincidencia porque el usuario acaba de crear una nueva)
+					f_LoadTarifasTransporte(parseInt(id_planta), parseInt(id_coordinadortransporte), 0);
+
+					// Marcar la nueva tarifa como seleccionada
+					setTimeout(function () {
+						var nuevoId = String(data.id_tarifatransporte);
+						var $radio = $("#radio_tarifa_" + nuevoId);
+
+						if ($radio.length > 0) {
+							$radio.prop('checked', true);
+							$("#hd_tarifa_id").val(data.id_tarifatransporte);
+							$("#hd_tarifa_monto").val(parseFloat(data.tarifa_sin_igv).toFixed(2));
+						}
+					}, 400);
+
+					// Cerrar form de nueva tarifa
+					$("#div_tarifa_nueva").hide();
+					$("#input_nueva_tarifa_sin_igv").val('');
+				}
+					else {
+						alert(data.mensaje || "Ocurrió un error al momento de grabar la Tarifa.");
+					}
+				}, "json");
+		}
+
+		function f_TarifaTransporte_Confirmar() {
+			var id_tarifatransporte = $("#hd_tarifa_id").val();
+
+			if (id_tarifatransporte == null || id_tarifatransporte.length == 0) {
+				alert("Debe seleccionar una Tarifa (o registrar una nueva con el botón '+ Nueva Tarifa').");
+
+				return;
+			}
+
+			$("#hd_cierreliquidacion_idtarifatransporte").val(id_tarifatransporte);
+
+			// Llama al cierre pasando _is_confirmacionmodal=2 para saltar la selección de tarifa
+			f_CierreLiquidacion(0, 0, 0, 0, 0, 0, 0, 2, 0);
 		}
 
 		function f_Reabrir(_item, _id_cierre, _codigo_despacho, _guias_remitenteruc, _placa, _id_planta, _id_modalidadenvio, _is_flete, _id_coordinadortransporte) {
@@ -2756,11 +3115,22 @@ if (!isset($_SESSION["Id"])) {
 			$.post("apis/backend.php", { accion: "reabrir_LiquidacionTransporte", id_cierre: _id_cierre },
 				function (data) {
 					if (data.estado == 1) {
+						// Obtener la tarifa actual del DOM para que el modal la auto-seleccione
+						var tarifa_actual_param = '';
+						if (_id_planta != 4) {
+							var lbl_txt = $("#lbl_preciotonelada_" + _item).text().trim();
+							// Extrae el número del texto tipo "S/ 270.00"
+							var match = lbl_txt.match(/[\d.,]+/);
+							if (match) {
+								tarifa_actual_param = ', ' + parseFloat(match[0].replace(/,/g, '')).toFixed(2);
+							}
+						}
+
 						if (_is_flete == 0) {
-							$("#td_cierre_1_" + _item).html('<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' + _item + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', 0, ' + _id_coordinadortransporte + ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;"><b>Generar Liquidación</b></button>');
+							$("#td_cierre_1_" + _item).html('<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' + _item + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', 0, ' + _id_coordinadortransporte + tarifa_actual_param + ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;"><b>Generar Liquidación</b></button>');
 						}
 						else {
-							$("#td_cierre_1_" + _item).html('<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' + _item + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', 0, ' + _id_coordinadortransporte + ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;"><b>Confirmar Flete</b></button>');
+							$("#td_cierre_1_" + _item).html('<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' + _item + ", '" + _codigo_despacho + "', '" + _guias_remitenteruc + "', '" + _placa + "', " + _id_planta + ', ' + _id_modalidadenvio + ', ' + _is_flete + ', 0, ' + _id_coordinadortransporte + tarifa_actual_param + ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;"><b>Confirmar Flete</b></button>');
 						}
 
 						$("#td_cierre_2_" + _item).html('');

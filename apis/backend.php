@@ -41143,7 +41143,7 @@ switch ($_POST["accion"]) {
 											 AND DATOS.guias_remitenteruc = LC.remitente_ruc
 											 AND DATOS.PLACA1 = LC.placa
 										 GROUP BY DATOS.ID_UNIDAD, DATOS.codigo_despacho, DATOS.codigo_despacho_comercializacion, DATOS.guias_idmodalidadenvio, DATOS.FECHAHORA_SALIDA, /*DATOS.FECHA_LLEGADAPLANTA,*/ DATOS.TIPO_VEHICULO, DATOS.PLACA1, DATOS.PLACA2, DATOS.TRANSPORTISTA_RUC, DATOS.TRANSPORTISTA_RAZONSOCIAL, MO.abv, IFNULL(LC.tarifa, TT.tarifa_sin_igv), DATOS.id_coordinadortransporte, COORDINADOR_TRANSPORTE, guias_remitenteruc, LC.Id
-										 ORDER BY codigo_despacho";
+										 ORDER BY (LC.Id IS NULL) DESC, codigo_despacho";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			if (mysqli_num_rows($res_datos) > 0) {
@@ -41223,7 +41223,7 @@ switch ($_POST["accion"]) {
 					$html .= '    ' . number_format($row_datos["TMH_TOTAL"], 3, '.', '');
 					$html .= '  </td>';
 
-					$html .= '  <td style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
+					$html .= '  <td id="td_preciotonelada_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
 					if ($id_planta == 4) { // Solo para Lomas
 						$html .= '		<div class="d-flex">';
@@ -41231,7 +41231,7 @@ switch ($_POST["accion"]) {
 						$html .= '			<input id="edit_tarifa_' . $d . '" type="text" class="form-control" style="text-align: center; font-size: 14px; margin-left: 5px;" value="' . $row_datos["tarifa_sin_igv"] . '" onkeyup="f_EditTarifa(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ')" ' . (($is_cerrado == 1) ? 'disabled' : '') . '>';
 						$html .= '		</div>';
 					} else {
-						$html .= '    ' . $row_datos["MONEDA_ABV"] . ' ' . $row_datos["tarifa_sin_igv"];
+						$html .= '    <label id="lbl_preciotonelada_' . $d . '">' . $row_datos["MONEDA_ABV"] . ' ' . number_format($row_datos["tarifa_sin_igv"], 2, '.', ',') . '</label>';
 					}
 
 					$html .= '  </td>';
@@ -41252,13 +41252,19 @@ switch ($_POST["accion"]) {
 					$html .= '  <td id="td_cierre_1_' . $d . '" style="border: solid; border-width: 1px; border-color: #D9D9D9; vertical-align: middle; text-align: center;">';
 
 					if ($is_cerrado == 0) {
+						// Para plantas distintas a Lomas, se pasa la tarifa actual para auto-seleccionarla en el modal
+						$tarifa_actual_param = '';
+						if ($id_planta != 4) {
+							$tarifa_actual_param = ', ' . number_format((float)$row_datos["tarifa_sin_igv"], 2, '.', '');
+						}
+
 						if ($row_datos["ID_MODALIDAD_ENVIO"] == 3 || $row_datos["ID_MODALIDAD_ENVIO"] == 6 || $row_datos["ID_MODALIDAD_ENVIO"] == 4 || $row_datos["ID_MODALIDAD_ENVIO"] == 5 || ($id_planta == 3 && ($row_datos["ID_MODALIDAD_ENVIO"] == 1 || $row_datos["ID_MODALIDAD_ENVIO"] == 2))) {
-							$html .= '		<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ', 0, 0, ' . $row_datos["id_coordinadortransporte"] . ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;">';
+							$html .= '		<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ', 0, 0, ' . $row_datos["id_coordinadortransporte"] . $tarifa_actual_param . ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;">';
 							$html .= '			<b>Generar Liquidación</b>';
 							$html .= '		</button>';
 						} else {
 							if ($id_planta == 4 && ($row_datos["ID_MODALIDAD_ENVIO"] == 1 || $row_datos["ID_MODALIDAD_ENVIO"] == 2)) {
-								$html .= '		<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ', 1, ' . $row_datos["id_coordinadortransporte"] . ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;">';
+								$html .= '		<button class="btn btn-warning" type="button" onclick="f_CierreLiquidacion(' . $d . ", '" . $row_datos["codigo_despacho"] . "', '" . $row_datos["guias_remitenteruc"] . "', '" . $row_datos["PLACA1"] . "', " . $id_planta . ', ' . $row_datos["ID_MODALIDAD_ENVIO"] . ', 1, ' . $row_datos["id_coordinadortransporte"] . $tarifa_actual_param . ');" style="width: 100%; color: #ffffff; font-size: 12px; background-color: #cfaa41; padding: 5px;">';
 								$html .= '			<b>Confirmar Flete</b>';
 								$html .= '		</button>';
 							}
@@ -41432,6 +41438,128 @@ switch ($_POST["accion"]) {
 
 		break;
 
+	case 'get_TarifasTransporte_ListaPorPlantaCoordinador':
+		$estado = 0;
+		$res = array();
+		$planta_descripcion = '';
+		$coordinador_descripcion = '';
+
+		// Recuperando parámetros
+		$id_planta = (isset($_POST["id_planta"])) ? $_POST["id_planta"] : 0;
+		$id_coordinadortransporte = (isset($_POST["id_coordinadortransporte"])) ? $_POST["id_coordinadortransporte"] : 0;
+
+		// Obtiene descripción de Planta
+		if (strlen($id_planta) > 0) {
+			$q_planta = "SELECT descripcion FROM tbconfig_plantas WHERE Id = " . $id_planta;
+
+			if ($res_planta = mysqli_query($enlace, $q_planta)) {
+				if (mysqli_num_rows($res_planta) > 0) {
+					while ($row_planta = mysqli_fetch_array($res_planta)) {
+						$planta_descripcion = $row_planta["descripcion"];
+					}
+				}
+			}
+		}
+
+		// Obtiene descripción de Coordinador de Transporte
+		if (strlen($id_coordinadortransporte) > 0) {
+			$q_coord = "SELECT nombres FROM tbconfig_coordinadorestransporte WHERE Id = " . $id_coordinadortransporte;
+
+			if ($res_coord = mysqli_query($enlace, $q_coord)) {
+				if (mysqli_num_rows($res_coord) > 0) {
+					while ($row_coord = mysqli_fetch_array($res_coord)) {
+						$coordinador_descripcion = $row_coord["nombres"];
+					}
+				}
+			}
+		}
+
+		// Lista de tarifas que coinciden con la planta y el coordinador de transporte
+		$q_tarifa = "SELECT TT.Id,
+										TT.id_planta,
+										TT.id_coordinadortransporte,
+										TT.id_moneda,
+										TT.tarifa_sin_igv,
+										TT.estado,
+										TT.fechahora_registro,
+										TT.usuario_registro,
+										MO.abv AS MONEDA_ABV,
+										MO.descripcion AS MONEDA_DESC
+								 FROM tbconfig_tarifatransporte TT
+										LEFT JOIN tbconfig_monedas MO ON TT.id_moneda = MO.Id
+								WHERE TT.estado = 'A'
+									AND TT.id_planta = " . $id_planta . "
+									AND TT.id_coordinadortransporte = " . $id_coordinadortransporte . "
+						 ORDER BY TT.fechahora_registro DESC, TT.Id DESC";
+
+		if ($res_tarifa = mysqli_query($enlace, $q_tarifa)) {
+			if (mysqli_num_rows($res_tarifa) > 0) {
+				$estado = 1;
+
+				while ($row_tarifa = mysqli_fetch_array($res_tarifa)) {
+					array_push($res, $row_tarifa);
+				}
+			}
+		}
+
+		echo json_encode(array('estado' => $estado, 'res' => $res, 'planta_descripcion' => $planta_descripcion, 'coordinador_descripcion' => $coordinador_descripcion));
+
+		break;
+
+	case 'grabar_TarifaTransporte':
+		$estado = 0;
+		$id_tarifatransporte = 0;
+
+		// Recuperando parámetros
+		$id_planta = (isset($_POST["id_planta"])) ? $_POST["id_planta"] : 0;
+		$id_coordinadortransporte = (isset($_POST["id_coordinadortransporte"])) ? $_POST["id_coordinadortransporte"] : 0;
+		$tarifa_sin_igv = (isset($_POST["tarifa_sin_igv"])) ? $_POST["tarifa_sin_igv"] : '';
+		$usuario_registro = $_SESSION["usu_usuario"];
+
+		// Validaciones
+		if (strlen($id_planta) == 0 || $id_planta <= 0) {
+			echo json_encode(array('estado' => 0, 'mensaje' => 'Debe indicar la Planta.'));
+
+			break;
+		}
+
+		if (strlen($id_coordinadortransporte) == 0 || $id_coordinadortransporte <= 0) {
+			echo json_encode(array('estado' => 0, 'mensaje' => 'Debe indicar el Coordinador de Transporte.'));
+
+			break;
+		}
+
+		if (strlen($tarifa_sin_igv) == 0) {
+			echo json_encode(array('estado' => 0, 'mensaje' => 'Debe ingresar la Tarifa.'));
+
+			break;
+		}
+
+		if ($tarifa_sin_igv <= 0) {
+			echo json_encode(array('estado' => 0, 'mensaje' => 'La Tarifa ingresada no puede ser CERO.'));
+
+			break;
+		}
+
+		// Grabando datos (id_moneda = 1, estado = 'A', fechahora y usuario automáticos)
+		$q_insert = "INSERT INTO tbconfig_tarifatransporte (id_planta, id_coordinadortransporte, id_moneda, tarifa_sin_igv, estado, fechahora_registro, usuario_registro) VALUES (";
+		$q_insert .= $id_planta . ", ";
+		$q_insert .= $id_coordinadortransporte . ", ";
+		$q_insert .= "1, ";
+		$q_insert .= $tarifa_sin_igv . ", ";
+		$q_insert .= "'A', ";
+		$q_insert .= "'" . $g_fecha . "', ";
+		$q_insert .= "'" . $usuario_registro . "')";
+
+		if ($res_insert = mysqli_query($enlace, $q_insert)) {
+			$estado = 1;
+			$id_tarifatransporte = mysqli_insert_id($enlace);
+		}
+
+		echo json_encode(array('estado' => $estado, 'id_tarifatransporte' => $id_tarifatransporte, 'tarifa_sin_igv' => $tarifa_sin_igv));
+
+		break;
+
 	case 'cierre_LiquidacionTransporte':
 		$estado = 0;
 
@@ -41440,6 +41568,7 @@ switch ($_POST["accion"]) {
 		$ruc_remitente = $_POST["ruc_remitente"];
 		$placa = $_POST["placa"];
 		$tarifa = $_POST["tarifa"];
+		$id_tarifatransporte = $_POST["id_tarifatransporte"];
 		$id_material = $_POST["id_material"];
 		$id_planta = $_POST["id_planta"];
 		$id_coordinadortransporte = $_POST["id_coordinadortransporte"];
@@ -41454,21 +41583,26 @@ switch ($_POST["accion"]) {
 		if ($res_delete = mysqli_query($enlace, $q_delete)) {
 		}
 
-		// Obteniendo el id de la tarifa de transporte
-		$id_tarifatransporte = '';
+		// Si no se envió id_tarifatransporte (caso Lomas), mantiene el valor de $tarifa recibido
+		// Si se envió id_tarifatransporte, se obtiene la tarifa_sin_igv desde la tabla
+		$tarifa_aplicada = $tarifa;
+		$moneda_abv = '';
 
-		$q_tarifa = "SELECT Id,
-														tarifa_sin_igv
-											 FROM tbconfig_tarifatransporte
-											WHERE estado = 'A'
-												AND id_planta = " . $id_planta . "
-												AND id_coordinadortransporte = " . $id_coordinadortransporte;
+		if (strlen($id_tarifatransporte) > 0) {
+			$q_tarifa = "SELECT TT.tarifa_sin_igv,
+																		 MO.abv AS MONEDA_ABV
+																FROM tbconfig_tarifatransporte TT
+																	 LEFT JOIN tbconfig_monedas MO ON TT.id_moneda = MO.Id
+														 WHERE TT.Id = " . $id_tarifatransporte . "
+															 AND TT.estado = 'A'";
 
-		if ($res_tarifa = mysqli_query($enlace, $q_tarifa)) {
-			if (mysqli_num_rows($res_tarifa) > 0) {
-				while ($row_tarifa = mysqli_fetch_array($res_tarifa)) {
-					$id_tarifatransporte = $row_tarifa["Id"];
-					$tarifa = $row_tarifa["tarifa_sin_igv"];
+			if ($res_tarifa = mysqli_query($enlace, $q_tarifa)) {
+				if (mysqli_num_rows($res_tarifa) > 0) {
+					while ($row_tarifa = mysqli_fetch_array($res_tarifa)) {
+						$tarifa = $row_tarifa["tarifa_sin_igv"];
+						$tarifa_aplicada = $tarifa;
+						$moneda_abv = $row_tarifa["MONEDA_ABV"];
+					}
 				}
 			}
 		}
@@ -41503,7 +41637,7 @@ switch ($_POST["accion"]) {
 			}
 		}
 
-		echo json_encode(array('estado' => $estado, 'id_cierre' => $id_cierre, 'id_cierre_md5' => $id_cierre_md5, 'fechahora_registro' => $g_fecha, 'usuario_registro' => $usuario_registro));
+		echo json_encode(array('estado' => $estado, 'id_cierre' => $id_cierre, 'id_cierre_md5' => $id_cierre_md5, 'fechahora_registro' => $g_fecha, 'usuario_registro' => $usuario_registro, 'tarifa' => $tarifa_aplicada, 'moneda_abv' => $moneda_abv));
 
 		break;
 
@@ -41680,7 +41814,7 @@ switch ($_POST["accion"]) {
 											 AND DATOS.PLACA1 = LC.placa
 										 LEFT JOIN tbconfig_tipopagocomprobante TPC ON LC.id_tipopagocomprobante = TPC.Id
 										 GROUP BY DATOS.id_planta, DATOS.PLANTA, DATOS.ID_UNIDAD, DATOS.codigo_despacho, DATOS.codigo_despacho_comercializacion, DATOS.guias_idmodalidadenvio, DATOS.FECHAHORA_SALIDA, DATOS.FECHA_LLEGADAPLANTA, DATOS.TIPO_VEHICULO, DATOS.PLACA1, DATOS.PLACA2, DATOS.TRANSPORTISTA_RUC, DATOS.TRANSPORTISTA_RAZONSOCIAL, MO.abv, IFNULL(LC.tarifa, TT.tarifa_sin_igv), COORDINADOR_TRANSPORTE, guias_remitenteruc, LC.Id
-										 ORDER BY DATOS.PLANTA, codigo_despacho";
+										 ORDER BY (LC.Id IS NULL) DESC, DATOS.PLANTA, codigo_despacho";
 
 		if ($res_datos = mysqli_query($enlace, $q_datos)) {
 			if (mysqli_num_rows($res_datos) > 0) {
